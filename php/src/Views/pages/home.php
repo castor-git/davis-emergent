@@ -1,4 +1,5 @@
 <?php use App\Core\View; ?>
+<?php $position='home_top'; include __DIR__.'/../partials/ad.php'; ?>
 <section class="hero" data-testid="hero">
   <div class="badge-row" style="margin-bottom:14px">
     <span class="badge hot">● LIVE NETWORK</span>
@@ -32,6 +33,8 @@
     <?php foreach ($popular as $video) include __DIR__.'/../partials/card.php'; ?>
   </div>
 </section>
+
+<?php $position='home_middle'; include __DIR__.'/../partials/ad.php'; ?>
 
 <section class="section">
   <div class="section-head"><h2>Newest</h2><a href="/videos?sort=newest">More →</a></div>

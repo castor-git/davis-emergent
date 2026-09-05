@@ -69,5 +69,21 @@ class Schema {
             v LONGTEXT NOT NULL,
             expires_at DATETIME NOT NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->exec("CREATE TABLE IF NOT EXISTS ads (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            position VARCHAR(32) NOT NULL,
+            kind ENUM('banner','snippet') NOT NULL DEFAULT 'banner',
+            title VARCHAR(191) NULL,
+            image_url VARCHAR(500) NULL,
+            link_url VARCHAR(500) NULL,
+            snippet_html TEXT NULL,
+            weight INT NOT NULL DEFAULT 1,
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            starts_at DATETIME NULL,
+            ends_at DATETIME NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_pos_active (position, active)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 }

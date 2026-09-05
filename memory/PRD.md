@@ -46,3 +46,9 @@ Build DAVISPORN, a responsive adult video aggregation website inspired by porndi
 
 ## Deployment note
 This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend` and `frontend` supervisor programs are still HTTP servers on the expected ports. If Emergent's deploy pipeline strictly requires FastAPI on 8001 (it does), the current setup satisfies it: FastAPI is running and is just acting as a proxy. MariaDB persistence lives on the pod volume — for a real deploy consider externalizing MariaDB or migrating to MongoDB.
+
+## Iteration 3 (2026-02) — Connect Feeds + Scheduled Imports + Ads
+- Admin dashboard now edits per-source config: feed_url for Upornia/XVideos CSV, api_key + host for XNXX RapidAPI. Values merge into runtime App::$config at boot.
+- Nightly cron at 03:00 UTC via `/app/.emergent/crons.yml` → `POST /api/cron/nightly-import`, Bearer-protected with `WEBHOOK_CRON_SECRET` (in backend/.env and forwarded to php-app via supervisor). Endpoint acks 2xx immediately then imports enabled non-demo sources and clears cache.
+- Advertising system: `ads` table + Ad model, 4 slot positions (home_top, home_middle, video_pre, video_sidebar), banner (image+link) + snippet (AdSense/ExoClick HTML/JS) kinds, weight, active flag, optional start/end windows. Admin CRUD (`/admin/ads/save`, `/admin/ads/delete`) with confirm.
+- Testing iteration 3: 14/14 backend + UI smoke PASS.

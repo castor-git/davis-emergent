@@ -1,6 +1,7 @@
 <?php use App\Core\View; $v = $video; ?>
 <article class="video-detail" data-testid="video-detail">
   <div>
+    <?php $position='video_pre'; include __DIR__.'/../partials/ad.php'; ?>
     <div class="player" data-testid="video-player">
       <?php if (!empty($v['embed_url'])): ?>
         <iframe src="<?= View::e($v['embed_url']) ?>" allowfullscreen loading="lazy" referrerpolicy="no-referrer"></iframe>
@@ -35,6 +36,7 @@
     </script>
   </div>
   <aside data-testid="video-sidebar">
+    <?php $position='video_sidebar'; include __DIR__.'/../partials/ad.php'; ?>
     <div class="taxo">
       <h3>Categories</h3>
       <div class="chips">

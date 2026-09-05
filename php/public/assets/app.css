@@ -145,6 +145,16 @@ table.data td .btn-primary,table.data td .btn-ghost{padding:5px 10px;font-size:.
 .doc{max-width:820px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:30px}
 .doc p{line-height:1.7;color:#c8cdd6}
 
+/* Ads */
+.ad-slot{position:relative;margin:18px 0;background:linear-gradient(135deg,#1a1d24,#0f1115);border:1px dashed #333844;border-radius:10px;padding:14px;display:flex;align-items:center;justify-content:center;min-height:80px}
+.ad-slot .ad-tag{position:absolute;top:6px;left:8px;font-size:.62rem;color:#5a616b;letter-spacing:.1em;font-weight:700}
+.ad-slot .ad-banner{display:flex;align-items:center;gap:14px;text-decoration:none;color:#e9ecef;font-weight:600;width:100%;justify-content:center}
+.ad-slot .ad-banner img{max-height:90px;border-radius:6px}
+.ad-slot .ad-banner .ad-title{font-size:1.05rem;color:var(--accent-2)}
+.ad-snippet{width:100%;text-align:center}
+.ad-snippet iframe,.ad-snippet img{max-width:100%}
+.video-detail .ad-slot{margin-top:0;margin-bottom:14px}
+
 /* Responsive */
 @media(max-width:900px){
   .mainnav{display:none}

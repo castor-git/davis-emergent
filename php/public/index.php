@@ -36,7 +36,13 @@ $router->get('/2257', fn() => (new SeoController())->staticPage('c2257'));
 $router->get('/admin', fn() => (new AdminController())->dashboard());
 $router->post('/admin/source/toggle', fn() => (new AdminController())->toggleSource());
 $router->post('/admin/source/import', fn() => (new AdminController())->importSource());
+$router->post('/admin/source/config', fn() => (new AdminController())->saveSourceConfig());
+$router->post('/admin/ads/save', fn() => (new AdminController())->saveAd());
+$router->post('/admin/ads/delete', fn() => (new AdminController())->deleteAd());
 $router->post('/admin/cache/clear', fn() => (new AdminController())->clearCache());
+
+// Cron webhook (called by the Emergent platform scheduler)
+$router->post('/api/cron/nightly-import', fn() => (new \App\Controllers\CronController())->nightlyImport());
 
 // Health for FastAPI proxy
 $router->get('/api/health', fn() => View::json(['ok'=>true,'app'=>'davisporn-php']));
