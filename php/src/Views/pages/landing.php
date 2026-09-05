@@ -5,7 +5,7 @@
     <?php if (!empty($l['keyword'])): ?><span class="badge">Search intent: “<?= View::e($l['keyword']) ?>”</span><?php endif; ?>
     <span class="badge"><?= number_format((int)$total) ?> videos</span>
   </div>
-  <h1><?= View::e($l['title']) ?></h1>
+  <h1><?= View::e($l['display_title'] ?? $l['title']) ?></h1>
   <?php if (!empty($l['intro'])): ?><p style="max-width:820px;color:#c8cdd6"><?= nl2br(View::e($l['intro'])) ?></p><?php endif; ?>
   <?php if ($cats || $tags): ?>
   <div class="chips" style="margin-top:12px">
@@ -98,4 +98,20 @@
   <?php for ($i=$start; $i<=$end; $i++): ?><a class="<?= $i==$page?'cur':'' ?>" href="<?= $base.'page='.$i ?>"><?= $i ?></a><?php endfor; ?>
   <a class="<?= $page>=$pages?'disabled':'' ?>" href="<?= $page>=$pages?'#':$base.'page='.($page+1) ?>">Next →</a>
 </nav>
+<?php endif; ?>
+
+<?php if (!empty($l['title_variant_b'])): ?>
+<script>
+// A/B click tracking beacon for landing <?= (int)$l['id'] ?> variant <?= View::e($l['ab_variant'] ?? 'A') ?>
+(function(){
+  const lid = <?= (int)$l['id'] ?>, v = "<?= View::e($l['ab_variant'] ?? 'A') ?>";
+  document.querySelectorAll('[data-testid="video-title-link"], .top10-body a.title, .grid a.title').forEach(function(a){
+    a.addEventListener('click', function(){
+      const url = '/api/ab/click?l=' + lid + '&v=' + v;
+      if (navigator.sendBeacon) navigator.sendBeacon(url);
+      else fetch(url, {method:'POST', keepalive:true}).catch(()=>{});
+    }, {once:false, passive:true});
+  });
+})();
+</script>
 <?php endif; ?>

@@ -88,3 +88,9 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 ## Iteration 9 (2026-02) — Rich Snippets + Bulk Publish
 - Top-10 landings now emit a full `ItemList` JSON-LD (10 ListItem entries, each embedding a VideoObject with contentUrl/thumbnail/duration/uploadDate) — Google can surface the numbered list directly in the SERP.
 - Landings table gets multi-select checkboxes (`bulk-cb-{id}`, `bulk-all`) with a sticky bulk toolbar (`bulk-toolbar`) exposing **Enable + Ping**, **Re-ping**, **Delete**. Enable also clears the `suggested` flag and pings IndexNow+Google+Bing for every selected row. All actions confirm and show a flash with counts.
+
+## Iteration 10 (2026-02) — Landing A/B Titles
+- New `title_variant_b` column and `landing_ab_stats(landing_id, variant, impressions, clicks)` table.
+- When variant B is set, `Landing::pickVariant()` assigns each visitor a sticky variant via cookie `l_ab_{id}` (30-day) and increments impressions on page 1. Public `<h1>` uses `display_title` (A or B).
+- Click tracking beacon: `POST /api/ab/click?l={id}&v={A|B}` fired via `navigator.sendBeacon` from every video title link on the landing page.
+- Admin landings table gets an A/B column showing clicks/impressions + CTR per variant, plus a `WIN` badge on the leader once each variant has >= 20 impressions.

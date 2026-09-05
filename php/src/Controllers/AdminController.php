@@ -40,11 +40,11 @@ class AdminController {
     public function landingForm(): void {
         $this->auth();
         $id = (int)($_GET['id'] ?? 0);
-        $prefill = ['id'=>0,'slug'=>'','title'=>'','keyword'=>'','intro'=>'','meta_title'=>'','meta_description'=>'','og_image'=>'','template'=>'grid','categories'=>[],'tags'=>[],'active'=>1];
+        $prefill = ['id'=>0,'slug'=>'','title'=>'','title_variant_b'=>'','keyword'=>'','intro'=>'','meta_title'=>'','meta_description'=>'','og_image'=>'','template'=>'grid','categories'=>[],'tags'=>[],'active'=>1];
         if ($id) {
             $l = \App\Models\Landing::find($id);
             if ($l) $prefill = [
-                'id'=>$id, 'slug'=>$l['slug'], 'title'=>$l['title'], 'keyword'=>$l['keyword'] ?? '',
+                'id'=>$id, 'slug'=>$l['slug'], 'title'=>$l['title'], 'title_variant_b'=>$l['title_variant_b'] ?? '', 'keyword'=>$l['keyword'] ?? '',
                 'intro'=>$l['intro'] ?? '', 'active'=>(int)$l['active'],
                 'meta_title'=>$l['meta_title'] ?? '', 'meta_description'=>$l['meta_description'] ?? '', 'og_image'=>$l['og_image'] ?? '',
                 'template'=>$l['template'] ?? 'grid',
@@ -81,6 +81,7 @@ class AdminController {
             'meta_description' => $_POST['meta_description'] ?? '',
             'og_image' => $_POST['og_image'] ?? '',
             'template' => $_POST['template'] ?? 'grid',
+            'title_variant_b' => $_POST['title_variant_b'] ?? '',
             'categories' => $_POST['categories'] ?? [],
             'tags' => $_POST['tags'] ?? [],
             'active' => isset($_POST['active']) ? 1 : 0,

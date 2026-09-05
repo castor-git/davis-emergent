@@ -113,10 +113,18 @@ class Schema {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         // Idempotent add-column migration for existing rows
-        foreach (['meta_title VARCHAR(191) NULL','meta_description VARCHAR(300) NULL','og_image VARCHAR(500) NULL',"template VARCHAR(24) NOT NULL DEFAULT 'grid'","suggested TINYINT(1) NOT NULL DEFAULT 0"] as $spec) {
+        foreach (['meta_title VARCHAR(191) NULL','meta_description VARCHAR(300) NULL','og_image VARCHAR(500) NULL',"template VARCHAR(24) NOT NULL DEFAULT 'grid'","suggested TINYINT(1) NOT NULL DEFAULT 0",'title_variant_b VARCHAR(191) NULL'] as $spec) {
             [$col] = explode(' ', $spec);
             $has = $db->query("SHOW COLUMNS FROM landings LIKE " . $db->quote($col))->fetch();
             if (!$has) $db->exec("ALTER TABLE landings ADD COLUMN $spec");
         }
+
+        $db->exec("CREATE TABLE IF NOT EXISTS landing_ab_stats (
+            landing_id INT NOT NULL,
+            variant CHAR(1) NOT NULL,
+            impressions INT NOT NULL DEFAULT 0,
+            clicks INT NOT NULL DEFAULT 0,
+            PRIMARY KEY (landing_id, variant)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 }

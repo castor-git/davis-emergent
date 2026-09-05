@@ -43,16 +43,53 @@ class Landing {
             trim((string)($d['meta_description'] ?? '')) ?: null,
             trim((string)($d['og_image'] ?? '')) ?: null,
             in_array(($d['template'] ?? 'grid'), ['grid','editorial','top10'], true) ? $d['template'] : 'grid',
+            trim((string)($d['title_variant_b'] ?? '')) ?: null,
             (int)!empty($d['active']),
         ];
         if ($id) {
-            $st = $db->prepare("UPDATE landings SET slug=?, title=?, keyword=?, intro=?, categories_json=?, tags_json=?, meta_title=?, meta_description=?, og_image=?, template=?, active=? WHERE id=?");
+            $st = $db->prepare("UPDATE landings SET slug=?, title=?, keyword=?, intro=?, categories_json=?, tags_json=?, meta_title=?, meta_description=?, og_image=?, template=?, title_variant_b=?, active=? WHERE id=?");
             $st->execute([...$payload, $id]);
             return $id;
         }
-        $st = $db->prepare("INSERT INTO landings (slug,title,keyword,intro,categories_json,tags_json,meta_title,meta_description,og_image,template,active) VALUES (?,?,?,?,?,?,?,?,?,?,?)");
+        $st = $db->prepare("INSERT INTO landings (slug,title,keyword,intro,categories_json,tags_json,meta_title,meta_description,og_image,template,title_variant_b,active) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
         $st->execute($payload);
         return (int)$db->lastInsertId();
+    }
+
+    /** Record an impression and return which variant to show. */
+    public static function pickVariant(array $landing): string {
+        $id = (int)$landing['id'];
+        $b = trim((string)($landing['title_variant_b'] ?? ''));
+        if ($b === '') return 'A';
+        $cookie = 'l_ab_' . $id;
+        $v = $_COOKIE[$cookie] ?? '';
+        if ($v !== 'A' && $v !== 'B') {
+            $v = (random_int(0, 1) === 0) ? 'A' : 'B';
+            setcookie($cookie, $v, [
+                'expires' => time() + 30 * 86400,
+                'path' => '/',
+                'samesite' => 'Lax',
+            ]);
+        }
+        return $v;
+    }
+
+    public static function bumpImpression(int $id, string $variant): void {
+        App::$db->prepare("INSERT INTO landing_ab_stats (landing_id, variant, impressions) VALUES (?, ?, 1)
+            ON DUPLICATE KEY UPDATE impressions = impressions + 1")->execute([$id, $variant]);
+    }
+
+    public static function bumpClick(int $id, string $variant): void {
+        App::$db->prepare("INSERT INTO landing_ab_stats (landing_id, variant, clicks) VALUES (?, ?, 1)
+            ON DUPLICATE KEY UPDATE clicks = clicks + 1")->execute([$id, $variant]);
+    }
+
+    public static function abStats(int $id): array {
+        $st = App::$db->prepare("SELECT variant, impressions, clicks FROM landing_ab_stats WHERE landing_id=?");
+        $st->execute([$id]);
+        $rows = ['A'=>['impressions'=>0,'clicks'=>0], 'B'=>['impressions'=>0,'clicks'=>0]];
+        foreach ($st->fetchAll() as $r) $rows[$r['variant']] = ['impressions'=>(int)$r['impressions'], 'clicks'=>(int)$r['clicks']];
+        return $rows;
     }
 
     public static function delete(int $id): void {

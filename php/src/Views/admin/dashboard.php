@@ -154,13 +154,16 @@
 <table class="data" data-testid="landings-table">
   <thead><tr>
     <th style="width:36px"><?php if ($landings): ?><input type="checkbox" id="bulk-all" data-testid="bulk-all"><?php endif; ?></th>
-    <th>Slug</th><th>Title</th><th>Keyword</th><th>Tpl</th><th>Cat/Tag</th><th>Views</th><th>Status</th><th></th>
+    <th>Slug</th><th>Title</th><th>Keyword</th><th>Tpl</th><th>Cat/Tag</th><th>Views</th><th>A/B</th><th>Status</th><th></th>
   </tr></thead>
   <tbody>
   <?php foreach ($landings as $l):
     $cats = json_decode($l['categories_json'] ?: '[]', true) ?: [];
     $tags = json_decode($l['tags_json'] ?: '[]', true) ?: [];
     $isDraft = !$l['active'] && !empty($l['suggested']);
+    $abOn = !empty($l['title_variant_b']);
+    $ab = $abOn ? \App\Models\Landing::abStats((int)$l['id']) : null;
+    $ctr = function($imp,$clk){ return $imp>0 ? number_format($clk*100/$imp,1).'%' : '—'; };
   ?>
     <tr <?= $isDraft ? 'style="background:rgba(255,176,32,.06)"' : '' ?>>
       <td><input type="checkbox" form="landings-bulk-form" name="ids[]" value="<?= (int)$l['id'] ?>" class="bulk-cb" data-testid="bulk-cb-<?= (int)$l['id'] ?>"></td>
@@ -170,6 +173,12 @@
       <td><code><?= View::e($l['template'] ?? 'grid') ?></code></td>
       <td class="muted" style="font-size:.82rem"><?= count($cats) ?>·<?= count($tags) ?></td>
       <td><?= (int)$l['views'] ?></td>
+      <td style="font-size:.78rem;font-family:var(--font-mono)" data-testid="ab-cell-<?= (int)$l['id'] ?>">
+        <?php if ($abOn): $winner = ($ab['A']['impressions']>=20 && $ab['B']['impressions']>=20) ? ((($ab['A']['clicks']/max(1,$ab['A']['impressions']))>($ab['B']['clicks']/max(1,$ab['B']['impressions'])))?'A':'B') : null; ?>
+          <div>A: <?= $ab['A']['clicks'] ?>/<?= $ab['A']['impressions'] ?> <span class="muted">(<?= $ctr($ab['A']['impressions'],$ab['A']['clicks']) ?>)</span><?= $winner==='A'?' <span class="pill on" style="padding:1px 6px;font-size:.62rem">WIN</span>':'' ?></div>
+          <div>B: <?= $ab['B']['clicks'] ?>/<?= $ab['B']['impressions'] ?> <span class="muted">(<?= $ctr($ab['B']['impressions'],$ab['B']['clicks']) ?>)</span><?= $winner==='B'?' <span class="pill on" style="padding:1px 6px;font-size:.62rem">WIN</span>':'' ?></div>
+        <?php else: ?><span class="muted">—</span><?php endif; ?>
+      </td>
       <td><span class="pill <?= $l['active']?'on':'off' ?>"><?= $l['active']?'ON':'OFF' ?></span></td>
       <td style="text-align:right;white-space:nowrap">
         <a class="btn-ghost" style="padding:4px 10px;font-size:.78rem" href="/admin/landings/edit?id=<?= (int)$l['id'] ?>" data-testid="landing-edit-<?= (int)$l['id'] ?>">Edit</a>
@@ -177,7 +186,7 @@
       </td>
     </tr>
   <?php endforeach; ?>
-  <?php if (!$landings): ?><tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
+  <?php if (!$landings): ?><tr><td colspan="10" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
   </tbody>
 </table>
 <?php if ($landings): ?>

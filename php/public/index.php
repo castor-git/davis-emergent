@@ -27,6 +27,7 @@ $router->get('/tag/{slug}', fn($p) => (new BrowseController())->tag($p));
 $router->get('/categories', fn() => (new SeoController())->categoriesIndex());
 $router->get('/tags', fn() => (new SeoController())->tagsIndex());
 $router->get('/l/{slug}', fn($p) => (new \App\Controllers\LandingController())->show($p));
+$router->post('/api/ab/click', fn() => (new \App\Controllers\LandingController())->abClick());
 $router->get('/robots.txt', fn() => (new SeoController())->robots());
 $router->get('/sitemap.xml', fn() => (new SeoController())->sitemap());
 $router->get('/terms', fn() => (new SeoController())->staticPage('terms'));

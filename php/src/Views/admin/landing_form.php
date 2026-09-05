@@ -7,6 +7,9 @@
   <label style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Title
     <input name="title" value="<?= View::e($p['title']) ?>" required data-testid="l-title" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px">
   </label>
+  <label style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Title B (A/B test — leave blank to disable)
+    <input name="title_variant_b" value="<?= View::e($p['title_variant_b']) ?>" data-testid="l-title-b" placeholder="e.g. 'MILF HD Videos — Free Streaming'" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px">
+  </label>
   <label style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">URL slug (/l/…)
     <input name="slug" value="<?= View::e($p['slug']) ?>" data-testid="l-slug" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px" placeholder="auto from title">
   </label>
