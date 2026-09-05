@@ -94,3 +94,9 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - When variant B is set, `Landing::pickVariant()` assigns each visitor a sticky variant via cookie `l_ab_{id}` (30-day) and increments impressions on page 1. Public `<h1>` uses `display_title` (A or B).
 - Click tracking beacon: `POST /api/ab/click?l={id}&v={A|B}` fired via `navigator.sendBeacon` from every video title link on the landing page.
 - Admin landings table gets an A/B column showing clicks/impressions + CTR per variant, plus a `WIN` badge on the leader once each variant has >= 20 impressions.
+
+## Iteration 11 (2026-02) — Home Trending Widget + Pod-Restart Resilience
+- Home page gets a **Trending collections** section between "Most viewed" and "Newest": up to 6 active landings ranked by combined CTR (falls back to views when < 5 impressions).
+- Tile design: 240×180 card with optional OG image background, template badge (GRID/EDITORIAL/TOP10), title, keyword tag and `👁 views · CTR x.x%` footer. `data-testid=trending-landings` and `trending-tile-{id}`.
+- Cache-integrated (home:v1 already TTL 5 min; invalidated by admin actions).
+- **Resilience fix**: pod restarts wipe `/usr/*` (php + mariadb binaries) and `/var/lib/mysql`. Added `/app/php/bootstrap.sh` (apt-installs php-cli+mariadb-server + initializes datadir if missing) and `/app/php/db_seed.sh` (creates DB + user). Supervisor conf now runs `bootstrap.sh &&` before each start of `mariadb` and `php-app`, so a pod restart auto-recovers within ~60s. Note: DB data itself is not persistent (it lives outside `/app`/`/root`) — landings, ads, search-queries and A/B stats reset on each pod restart until we move the datadir under `/app/mysql`.

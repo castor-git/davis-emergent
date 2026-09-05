@@ -34,6 +34,30 @@
   </div>
 </section>
 
+<?php if (!empty($trending_landings)): ?>
+<section class="section">
+  <div class="section-head"><h2>Trending collections</h2><a href="/admin" class="muted" style="font-size:.75rem">manage →</a></div>
+  <div class="landing-tiles" data-testid="trending-landings">
+    <?php foreach ($trending_landings as $tl):
+      $ctr = ((int)$tl['imps'] >= 5 && (int)$tl['imps'] > 0) ? number_format(($tl['clks']*100)/$tl['imps'],1).'%' : null;
+    ?>
+    <a class="landing-tile" href="/l/<?= View::e($tl['slug']) ?>" data-testid="trending-tile-<?= (int)$tl['id'] ?>">
+      <div class="landing-tile-bg" <?php if (!empty($tl['og_image'])): ?>style="background-image:url('<?= View::e($tl['og_image']) ?>')"<?php endif; ?>></div>
+      <div class="landing-tile-content">
+        <span class="badge hot" style="align-self:flex-start"><?= strtoupper(View::e($tl['template'] ?? 'grid')) ?></span>
+        <h3><?= View::e($tl['title']) ?></h3>
+        <?php if (!empty($tl['keyword'])): ?><div class="muted" style="font-size:.78rem">#<?= View::e($tl['keyword']) ?></div><?php endif; ?>
+        <div class="landing-tile-meta">
+          <span>👁 <?= number_format((int)$tl['views']) ?></span>
+          <?php if ($ctr !== null): ?><span class="rating" style="color:var(--gold)">CTR <?= $ctr ?></span><?php endif; ?>
+        </div>
+      </div>
+    </a>
+    <?php endforeach; ?>
+  </div>
+</section>
+<?php endif; ?>
+
 <?php $position='home_middle'; include __DIR__.'/../partials/ad.php'; ?>
 
 <section class="section">

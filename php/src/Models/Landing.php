@@ -133,4 +133,24 @@ class Landing {
     public static function incrementViews(int $id): void {
         App::$db->prepare("UPDATE landings SET views = views + 1 WHERE id=?")->execute([$id]);
     }
+
+    /** Rank active landings by combined CTR (falls back to views when data is thin). */
+    public static function trending(int $limit = 6): array {
+        // Include landings even without A/B by LEFT JOIN aggregating stats
+        $sql = "SELECT l.id, l.slug, l.title, l.keyword, l.template, l.views, l.og_image,
+                       COALESCE(SUM(s.impressions),0) AS imps,
+                       COALESCE(SUM(s.clicks),0) AS clks,
+                       CASE WHEN COALESCE(SUM(s.impressions),0) >= 5 THEN (SUM(s.clicks)*1.0 / SUM(s.impressions))
+                            ELSE 0 END AS ctr
+                FROM landings l
+                LEFT JOIN landing_ab_stats s ON s.landing_id = l.id
+                WHERE l.active = 1
+                GROUP BY l.id
+                ORDER BY ctr DESC, l.views DESC, l.id DESC
+                LIMIT ?";
+        $st = App::$db->prepare($sql);
+        $st->bindValue(1, $limit, \PDO::PARAM_INT);
+        $st->execute();
+        return $st->fetchAll();
+    }
 }

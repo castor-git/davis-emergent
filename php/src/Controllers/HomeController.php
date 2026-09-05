@@ -14,6 +14,7 @@ class HomeController {
                 'top_rated' => Video::paginate(['sort'=>'rating'], 1, 6)['items'],
                 'categories' => Taxonomy::popularCategories(18),
                 'tags' => Taxonomy::popularTags(30),
+                'trending_landings' => \App\Models\Landing::trending(6),
             ];
         });
         View::render('pages/home', $data + ['title' => App::config('app_name') . ' — ' . App::config('tagline')]);
