@@ -65,4 +65,75 @@
         .catch(function(){});
     });
   });
+  // Preferences drawer
+  const openBtn = document.getElementById('prefbtn');
+  const drawer = document.getElementById('pref-drawer');
+  const backdrop = document.getElementById('pref-backdrop');
+  const closeBtn = document.getElementById('pref-close');
+  const pinsEl = document.getElementById('pref-pins-list');
+  const hidesEl = document.getElementById('pref-hides-list');
+  const pinsCnt = document.getElementById('pref-pins-count');
+  const hidesCnt = document.getElementById('pref-hides-count');
+  const pickerEl = document.getElementById('pref-picker');
+  const searchEl = document.getElementById('pref-search');
+  const applyBtn = document.getElementById('pref-apply');
+  const clearHidesBtn = document.getElementById('pref-clear-hides');
+  let prefState = {pins:[], hides:[], labels:{}, all:[]};
+
+  function renderPrefState(){
+    const label = s => (prefState.labels[s] && prefState.labels[s].name) || s;
+    pinsCnt.textContent = '(' + prefState.pins.length + ')';
+    hidesCnt.textContent = '(' + prefState.hides.length + ')';
+    pinsEl.innerHTML = prefState.pins.length
+      ? prefState.pins.map(s => '<span class="pref-item pin" data-slug="'+s+'" data-testid="pref-pin-'+s+'">📌 '+label(s)+'<button class="pref-x" data-remove="pin" data-slug="'+s+'" aria-label="Unpin">×</button></span>').join('')
+      : '<span class="muted" style="font-size:.85rem">Nothing pinned yet.</span>';
+    hidesEl.innerHTML = prefState.hides.length
+      ? prefState.hides.map(s => '<span class="pref-item hide" data-slug="'+s+'" data-testid="pref-hide-'+s+'">✕ '+label(s)+'<button class="pref-x" data-remove="hide" data-slug="'+s+'" aria-label="Unhide">×</button></span>').join('')
+      : '<span class="muted" style="font-size:.85rem">Nothing hidden.</span>';
+    renderPicker(searchEl ? searchEl.value : '');
+  }
+  function renderPicker(q){
+    q = (q||'').trim().toLowerCase();
+    const rows = prefState.all
+      .filter(c => q === '' || c.name.toLowerCase().includes(q) || c.slug.includes(q))
+      .slice(0, 40)
+      .map(c => {
+        const pinned = prefState.pins.includes(c.slug);
+        const hidden = prefState.hides.includes(c.slug);
+        return '<div class="pref-row" data-slug="'+c.slug+'" data-testid="pref-picker-row-'+c.slug+'">'
+          + '<div><span class="name">'+c.name+'</span><span class="cnt">'+c.count+'</span></div>'
+          + '<div class="acts">'
+          +   '<button data-toggle="pin" class="'+(pinned?'on-pin':'')+'">'+(pinned?'📌 pinned':'pin')+'</button>'
+          +   '<button data-toggle="hide" class="'+(hidden?'on-hide':'')+'">'+(hidden?'✕ hidden':'hide')+'</button>'
+          + '</div></div>';
+      });
+    pickerEl.innerHTML = rows.length ? rows.join('') : '<p class="muted" style="font-size:.82rem;padding:8px">No categories match.</p>';
+  }
+  function loadPrefs(){
+    return fetch('/api/prefs', {credentials:'same-origin'}).then(r=>r.json()).then(s => { prefState = s; renderPrefState(); });
+  }
+  function toggle(act, slug){
+    const fd = new FormData(); fd.append('slug', slug);
+    return fetch('/api/prefs/' + act, {method:'POST', body: fd, credentials:'same-origin'}).then(r=>r.json())
+      .then(s => { prefState.pins = s.pins; prefState.hides = s.hides; renderPrefState(); });
+  }
+  function openDrawer(){
+    drawer.hidden = false; backdrop.hidden = false;
+    loadPrefs();
+  }
+  function closeDrawer(){ drawer.hidden = true; backdrop.hidden = true; }
+  if (openBtn) openBtn.addEventListener('click', openDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (backdrop) backdrop.addEventListener('click', closeDrawer);
+  if (searchEl) searchEl.addEventListener('input', function(){ renderPicker(this.value); });
+  if (drawer) drawer.addEventListener('click', function(e){
+    const rm = e.target.closest('[data-remove]');
+    if (rm) { toggle(rm.getAttribute('data-remove'), rm.getAttribute('data-slug')); return; }
+    const tg = e.target.closest('[data-toggle]');
+    if (tg) { toggle(tg.getAttribute('data-toggle'), tg.closest('.pref-row').getAttribute('data-slug')); return; }
+  });
+  if (applyBtn) applyBtn.addEventListener('click', function(){ location.reload(); });
+  if (clearHidesBtn) clearHidesBtn.addEventListener('click', function(){
+    Promise.all(prefState.hides.map(s => toggle('hide', s))).then(()=>{});
+  });
 })();

@@ -121,3 +121,9 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
   - Cron `weekly-digest` at `0 9 * * 1` UTC → `POST /api/cron/weekly-digest` (Bearer-protected). Ack immediately then send + log to `digests` table.
   - Admin preview at `/admin/digest` — shows recipient, key status, full preview and last 5 send attempts + "Send now" button. Recipient in env `DIGEST_TO_EMAIL=superpanel87@gmail.com`.
   - **Note**: `EMERGENT_EMAIL_KEY` currently blank in this env (not auto-provisioned). Provisioned key can be added to `/app/backend/.env` and `davisporn.conf` supervisor `environment=` and it will start sending on next Monday.
+
+## Iteration 15 (2026-02) — Preference Panel
+- New topbar button `★` (`data-testid=open-prefs`) opens a slide-out drawer from the right (`#pref-drawer`, backdrop, close button, apply-and-reload footer).
+- Drawer sections: **📌 Pinned** (removable chips), **✕ Hidden** (removable chips), **Add category** (searchable list of up to 60 popular categories with inline `pin` / `hide` buttons that flip color when active).
+- Data endpoint: `GET /api/prefs` now returns `{pins, hides, labels, all}` including pretty names + video counts, so the drawer renders human-friendly labels rather than raw slugs.
+- JS: toggling in the drawer calls the existing `/api/prefs/pin` / `/api/prefs/hide` and re-renders state in place; "Clear hidden" removes every hide in one tap; "Apply & reload" bounces the page so home reorders instantly.

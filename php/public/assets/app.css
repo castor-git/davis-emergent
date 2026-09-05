@@ -34,6 +34,33 @@ h3{font-size:1.05rem}
 .searchbox button{background:var(--accent);color:#fff;border:0;padding:0 16px;font-size:1.1rem;cursor:pointer}
 .searchbox button:hover{background:var(--accent-2)}
 .menubtn{display:none;background:transparent;border:1px solid var(--border);color:#fff;border-radius:6px;padding:6px 10px;font-size:1.1rem}
+.prefbtn{background:transparent;border:1px solid var(--border);color:var(--gold);border-radius:20px;width:36px;height:36px;font-size:1rem;cursor:pointer;transition:.15s;font-weight:700}
+.prefbtn:hover{background:var(--gold);color:#111;border-color:var(--gold)}
+.pref-drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px, 100%);background:#101216;border-left:1px solid var(--border);z-index:80;padding:22px 24px;overflow-y:auto;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1)}
+.pref-drawer:not([hidden]){transform:translateX(0)}
+.pref-backdrop{position:fixed;inset:0;background:rgba(8,9,11,.55);backdrop-filter:blur(4px);z-index:70}
+.pref-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pref-head h3{margin:0}
+.pref-close{background:transparent;border:0;color:var(--muted);font-size:1.6rem;cursor:pointer;line-height:1}
+.pref-close:hover{color:#fff}
+.pref-section{margin-top:22px}
+.pref-section h4{color:#c8cdd6;margin:0 0 10px;font-size:.82rem;text-transform:uppercase;letter-spacing:.06em}
+.pref-list{display:flex;flex-wrap:wrap;gap:6px;min-height:34px}
+.pref-item{display:inline-flex;align-items:center;gap:6px;background:#1a1d24;border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:.82rem;color:#c8cdd6}
+.pref-item.pin{background:rgba(255,176,32,.14);border-color:rgba(255,176,32,.4);color:#ffd076}
+.pref-item.hide{background:rgba(225,6,0,.14);border-color:rgba(225,6,0,.4);color:#ff8887}
+.pref-item .pref-x{background:transparent;border:0;color:inherit;cursor:pointer;font-size:.9rem;padding:0 2px;opacity:.7}
+.pref-item .pref-x:hover{opacity:1}
+.pref-picker{max-height:260px;overflow-y:auto;margin-top:8px;border:1px solid var(--border);border-radius:8px;padding:6px}
+.pref-picker .pref-row{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-radius:6px;font-size:.85rem}
+.pref-picker .pref-row:hover{background:#0f1115}
+.pref-picker .pref-row .name{color:#c8cdd6}
+.pref-picker .pref-row .cnt{color:var(--muted);font-size:.72rem;font-family:var(--font-mono);margin-left:8px}
+.pref-picker .pref-row .acts{display:flex;gap:4px}
+.pref-picker .pref-row .acts button{background:#0f1115;border:1px solid var(--border);color:var(--muted);padding:3px 8px;border-radius:4px;font-size:.72rem;cursor:pointer}
+.pref-picker .pref-row .acts button.on-pin{background:var(--gold);color:#111;border-color:var(--gold)}
+.pref-picker .pref-row .acts button.on-hide{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pref-actions{margin-top:20px;display:flex;gap:8px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--border)}
 .suggest{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#0f1115;border:1px solid var(--border);border-radius:8px;list-style:none;margin:0;padding:6px;z-index:60;max-height:320px;overflow:auto}
 .suggest li{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:.9rem}
 .suggest li:hover,.suggest li.active{background:#1a1d23;color:var(--accent-2)}

@@ -43,6 +43,7 @@
       <button type="submit" data-testid="search-submit" aria-label="Search">⌕</button>
       <ul id="suggestions" class="suggest" hidden></ul>
     </form>
+    <button class="prefbtn" id="prefbtn" data-testid="open-prefs" aria-label="Preferences" title="Your feed preferences">★</button>
     <button class="menubtn" id="menubtn" aria-label="Menu">☰</button>
   </div>
 </header>
@@ -50,6 +51,36 @@
 <main class="wrap main" data-testid="main-content">
 <?= $content ?>
 </main>
+
+<aside id="pref-drawer" class="pref-drawer" hidden data-testid="pref-drawer">
+  <div class="pref-head">
+    <h3>Your feed preferences</h3>
+    <button class="pref-close" id="pref-close" aria-label="Close" data-testid="close-prefs">×</button>
+  </div>
+  <p class="muted">Pin what you love, hide what you don't. Everything applies instantly and follows you across visits.</p>
+
+  <div class="pref-section">
+    <h4>📌 Pinned <span class="muted" id="pref-pins-count">0</span></h4>
+    <div id="pref-pins-list" class="pref-list" data-testid="pref-pins-list"><span class="muted" style="font-size:.85rem">Nothing pinned yet.</span></div>
+  </div>
+
+  <div class="pref-section">
+    <h4>✕ Hidden <span class="muted" id="pref-hides-count">0</span></h4>
+    <div id="pref-hides-list" class="pref-list" data-testid="pref-hides-list"><span class="muted" style="font-size:.85rem">Nothing hidden.</span></div>
+  </div>
+
+  <div class="pref-section">
+    <h4>Add category</h4>
+    <input type="search" id="pref-search" placeholder="Type to search categories…" data-testid="pref-search" style="width:100%;background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit">
+    <div id="pref-picker" class="pref-picker" data-testid="pref-picker"></div>
+  </div>
+
+  <div class="pref-actions">
+    <button class="btn-ghost" id="pref-clear-hides" data-testid="pref-clear-hides">Clear hidden</button>
+    <button class="btn-primary" id="pref-apply" data-testid="pref-apply">Apply &amp; reload</button>
+  </div>
+</aside>
+<div id="pref-backdrop" class="pref-backdrop" hidden></div>
 
 <footer class="footer">
   <div class="wrap">
