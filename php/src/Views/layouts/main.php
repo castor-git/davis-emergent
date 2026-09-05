@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= View::e($title ?? 'DAVISPORN') ?></title>
-<meta name="description" content="DAVISPORN — premium HD adult video network. Trending clips, thousands of scenes, updated daily.">
+<meta name="description" content="<?= View::e($meta_description ?? 'DAVISPORN — premium HD adult video network. Trending clips, thousands of scenes, updated daily.') ?>">
 <meta name="rating" content="adult">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="<?= View::e('https://' . ($_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '/')) ?>">
+<link rel="canonical" href="<?= View::e('https://' . ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '') . ($_SERVER['REQUEST_URI'] ?? '/')) ?>">
+<?= $head_extra ?? '' ?>
 <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23e10600'/><text x='16' y='22' text-anchor='middle' font-size='18' fill='%23fff' font-family='sans-serif' font-weight='900'>D</text></svg>">
 <link rel="stylesheet" href="/assets/app.css">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"DAVISPORN","url":"https://<?= View::e($_SERVER['HTTP_HOST'] ?? '') ?>","potentialAction":{"@type":"SearchAction","target":"/search?q={q}","query-input":"required name=q"}}</script>

@@ -39,14 +39,17 @@ class Landing {
             $d['intro'] ?? null,
             json_encode(array_values(array_filter(array_map('trim', (array)($d['categories'] ?? []))))),
             json_encode(array_values(array_filter(array_map('trim', (array)($d['tags'] ?? []))))),
+            trim((string)($d['meta_title'] ?? '')) ?: null,
+            trim((string)($d['meta_description'] ?? '')) ?: null,
+            trim((string)($d['og_image'] ?? '')) ?: null,
             (int)!empty($d['active']),
         ];
         if ($id) {
-            $st = $db->prepare("UPDATE landings SET slug=?, title=?, keyword=?, intro=?, categories_json=?, tags_json=?, active=? WHERE id=?");
+            $st = $db->prepare("UPDATE landings SET slug=?, title=?, keyword=?, intro=?, categories_json=?, tags_json=?, meta_title=?, meta_description=?, og_image=?, active=? WHERE id=?");
             $st->execute([...$payload, $id]);
             return $id;
         }
-        $st = $db->prepare("INSERT INTO landings (slug,title,keyword,intro,categories_json,tags_json,active) VALUES (?,?,?,?,?,?,?)");
+        $st = $db->prepare("INSERT INTO landings (slug,title,keyword,intro,categories_json,tags_json,meta_title,meta_description,og_image,active) VALUES (?,?,?,?,?,?,?,?,?,?)");
         $st->execute($payload);
         return (int)$db->lastInsertId();
     }

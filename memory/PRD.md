@@ -65,3 +65,9 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - One-click flow: in the Top-20 Search insights table, every keyword row shows a `+ Landing` button that opens the create form pre-filled with keyword, auto-slug, boilerplate intro, and pre-checked matching categories/tags (fuzzy LIKE on category/tag names).
 - Union semantics: a video is included if it matches ANY chosen category OR tag OR title/description LIKE keyword.
 - Iteration 4 tests: 12/12 backend + UI smoke PASS.
+
+## Iteration 6 (2026-02) — Landing SEO Boost
+- `landings` table extended with `meta_title`, `meta_description`, `og_image` (idempotent ALTER for existing rows).
+- Public `/l/{slug}` emits `<title>`, `<meta description>`, canonical URL (from X-Forwarded-Host), full Open Graph tags (`og:type=video.other`, `og:site_name`, `og:url`, `og:title`, `og:description`, `og:image`) and Twitter card (`summary_large_image` if image present, otherwise `summary`).
+- Sensible defaults when admin leaves fields empty: `meta_title = title — DAVISPORN`, `meta_description = intro trimmed to 160 chars`, `og_image = first video thumbnail`.
+- Admin landing form gets a new **SEO & social sharing** fieldset (data-testid l-meta-title, l-meta-desc, l-og-image).

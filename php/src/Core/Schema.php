@@ -104,9 +104,19 @@ class Schema {
             intro TEXT NULL,
             categories_json TEXT NULL,
             tags_json TEXT NULL,
+            meta_title VARCHAR(191) NULL,
+            meta_description VARCHAR(300) NULL,
+            og_image VARCHAR(500) NULL,
             active TINYINT(1) NOT NULL DEFAULT 1,
             views INT NOT NULL DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        // Idempotent add-column migration for existing rows
+        foreach (['meta_title VARCHAR(191) NULL','meta_description VARCHAR(300) NULL','og_image VARCHAR(500) NULL'] as $spec) {
+            [$col] = explode(' ', $spec);
+            $has = $db->query("SHOW COLUMNS FROM landings LIKE " . $db->quote($col))->fetch();
+            if (!$has) $db->exec("ALTER TABLE landings ADD COLUMN $spec");
+        }
     }
 }

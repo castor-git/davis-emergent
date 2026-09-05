@@ -20,6 +20,21 @@
   </label>
 
   <fieldset style="grid-column:1/-1;border:1px solid var(--border);border-radius:8px;padding:12px">
+    <legend class="muted" style="padding:0 8px;font-size:.75rem;font-weight:700;text-transform:uppercase">SEO &amp; social sharing</legend>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Meta title (<= 60 chars)
+        <input name="meta_title" maxlength="120" value="<?= View::e($p['meta_title']) ?>" data-testid="l-meta-title" placeholder="Defaults to page title" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px">
+      </label>
+      <label style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">OG image URL
+        <input name="og_image" value="<?= View::e($p['og_image']) ?>" data-testid="l-og-image" placeholder="Defaults to first video thumbnail" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px">
+      </label>
+      <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Meta description (<= 160 chars)
+        <textarea name="meta_description" rows="2" maxlength="300" data-testid="l-meta-desc" placeholder="Defaults to intro copy trimmed to 160 chars" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit"><?= View::e($p['meta_description']) ?></textarea>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset style="grid-column:1/-1;border:1px solid var(--border);border-radius:8px;padding:12px">
     <legend class="muted" style="padding:0 8px;font-size:.75rem;font-weight:700;text-transform:uppercase">Categories to include</legend>
     <div style="display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow:auto">
       <?php foreach ($all_cats as $c): $checked = in_array($c['slug'], $p['categories']); ?>
