@@ -24,6 +24,7 @@ class SeoController {
         foreach ($rows as $r) $out[] = "<url><loc>{$host}/video/".View::e($r['slug'])."</loc><lastmod>".date('c', strtotime($r['published_at']))."</lastmod></url>";
         foreach (App::$db->query("SELECT slug FROM categories")->fetchAll() as $r) $out[] = "<url><loc>{$host}/category/".View::e($r['slug'])."</loc></url>";
         foreach (App::$db->query("SELECT slug FROM tags")->fetchAll() as $r) $out[] = "<url><loc>{$host}/tag/".View::e($r['slug'])."</loc></url>";
+        foreach (App::$db->query("SELECT slug, created_at FROM landings WHERE active=1")->fetchAll() as $r) $out[] = "<url><loc>{$host}/l/".View::e($r['slug'])."</loc><lastmod>".date('c', strtotime($r['created_at']))."</lastmod><changefreq>daily</changefreq><priority>0.7</priority></url>";
         $out[] = '</urlset>';
         echo implode("\n", $out);
     }

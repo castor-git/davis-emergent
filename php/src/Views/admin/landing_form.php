@@ -32,6 +32,25 @@
         <textarea name="meta_description" rows="2" maxlength="300" data-testid="l-meta-desc" placeholder="Defaults to intro copy trimmed to 160 chars" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit"><?= View::e($p['meta_description']) ?></textarea>
       </label>
     </div>
+    <?php if ($p['id'] && $p['slug']):
+      $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '';
+      $scheme = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'https';
+      $pubUrl = $scheme . '://' . $host . '/l/' . rawurlencode($p['slug']);
+      $u = rawurlencode($pubUrl);
+    ?>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <div class="muted" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Social preview tester</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <a class="btn-ghost" style="padding:6px 12px;font-size:.82rem" href="https://cards-dev.twitter.com/validator" target="_blank" rel="noopener" data-testid="preview-x-validator">X Card Validator</a>
+        <a class="btn-ghost" style="padding:6px 12px;font-size:.82rem" href="https://twitter.com/intent/tweet?url=<?= View::e($u) ?>" target="_blank" rel="noopener" data-testid="preview-x">Preview on X</a>
+        <a class="btn-ghost" style="padding:6px 12px;font-size:.82rem" href="https://developers.facebook.com/tools/debug/?q=<?= View::e($u) ?>" target="_blank" rel="noopener" data-testid="preview-fb">Preview on Facebook</a>
+        <a class="btn-ghost" style="padding:6px 12px;font-size:.82rem" href="https://www.linkedin.com/post-inspector/inspect/<?= View::e($u) ?>" target="_blank" rel="noopener" data-testid="preview-linkedin">Preview on LinkedIn</a>
+        <span class="muted" style="font-size:.78rem;margin-left:6px">Live URL: <a href="<?= View::e($pubUrl) ?>" target="_blank" data-testid="preview-live-url"><?= View::e($pubUrl) ?></a></span>
+      </div>
+    </div>
+    <?php else: ?>
+    <p class="muted" style="font-size:.78rem;margin-top:10px">Publish this landing to unlock the social preview tester (X, Facebook, LinkedIn).</p>
+    <?php endif; ?>
   </fieldset>
 
   <fieldset style="grid-column:1/-1;border:1px solid var(--border);border-radius:8px;padding:12px">

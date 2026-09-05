@@ -71,3 +71,7 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - Public `/l/{slug}` emits `<title>`, `<meta description>`, canonical URL (from X-Forwarded-Host), full Open Graph tags (`og:type=video.other`, `og:site_name`, `og:url`, `og:title`, `og:description`, `og:image`) and Twitter card (`summary_large_image` if image present, otherwise `summary`).
 - Sensible defaults when admin leaves fields empty: `meta_title = title — DAVISPORN`, `meta_description = intro trimmed to 160 chars`, `og_image = first video thumbnail`.
 - Admin landing form gets a new **SEO & social sharing** fieldset (data-testid l-meta-title, l-meta-desc, l-og-image).
+
+## Iteration 7 (2026-02) — Sitemap Landings + Social Preview Tester
+- `/sitemap.xml` now includes every active landing with lastmod, `<changefreq>daily</changefreq>` and `<priority>0.7</priority>` so Google discovers them on the next crawl.
+- Landing form (only when editing an existing landing) shows a **Social preview tester** row with 4 buttons: X Card Validator, Preview on X (tweet intent with URL), Facebook Sharing Debugger, LinkedIn Post Inspector — each opens the validator/preview with the live landing URL prefilled. On the create form it shows a "Publish first" hint.
