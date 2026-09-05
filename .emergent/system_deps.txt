@@ -1,0 +1,8 @@
+cron=3.0pl1-162
+mariadb-server=1:10.11.18-0+deb12u1
+php-cli=2:8.2+93
+php-curl=2:8.2+93
+php-mbstring=2:8.2+93
+php-mysql=2:8.2+93
+php-xml=2:8.2+93
+php-zip=2:8.2+93

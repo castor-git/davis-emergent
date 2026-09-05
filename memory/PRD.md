@@ -1,0 +1,48 @@
+# DAVISPORN — PRD
+
+## Original problem statement
+Build DAVISPORN, a responsive adult video aggregation website inspired by porndig.com, reusing PHP 8 and MySQL/MariaDB, with modular source adapters (Upornia CSV, XVideos CSV, XNXX via RapidAPI, plus future adapters), home page (featured/popular/tags/categories), advanced filters, AJAX autocomplete search, category & tag landing pages, detailed video page with embeds & recommendations, age verification, legal pages (Terms/Privacy/DMCA/2257), XML sitemap, robots.txt, canonical URLs, structured data, SEO-friendly routing, admin area for sources / imports / cache / diagnostics, dark premium interface (red accent).
+
+## Architecture (2026-02)
+- **PHP 8.2** + **MariaDB 10.11** — installed inside the container.
+- Full PHP app in `/app/php` (public entry, PSR-4 autoload under `App\`, MVC-like structure).
+- **Supervisor** manages `mariadb` and `php-app` (built-in server on 127.0.0.1:9000) via `/etc/supervisor/conf.d/davisporn.conf`.
+- Environment constraints (ingress → :3000 and /api → :8001) satisfied by making the pre-existing services reverse-proxy every request to PHP:9000:
+  - `/app/backend/server.py` — FastAPI catch-all proxy (adds X-Forwarded-Host/Proto).
+  - `/app/frontend/proxy.js` — Node HTTP proxy, replaces `craco start` in `package.json`.
+- Data source adapters in `App\Adapters` implement a common `SourceAdapter` interface with a `SourceManager` that normalizes, deduplicates and writes to a shared `videos/categories/tags` schema.
+
+## User personas
+- **Visitor** — browses home, categories, tags, videos, uses search+filters, watches embedded videos.
+- **Admin** — signs in (HTTP Basic), enables/disables sources, triggers imports, clears cache.
+
+## Core requirements
+- Age verification (modal + localStorage `davisporn_age_ok`).
+- Home: hero, Featured, Popular categories, Most viewed, Newest, Trending tags.
+- Browse `/videos` with quality/duration/source/sort filters + pagination.
+- Category `/category/{slug}` and tag `/tag/{slug}` landing pages.
+- AJAX search `/search` + `/api/suggest` autocomplete.
+- Video detail `/video/{slug}` with embed (or placeholder for demo), metadata, chips, related grid, VideoObject schema.org JSON-LD.
+- Legal: `/terms`, `/privacy`, `/dmca`, `/2257`.
+- SEO: `/robots.txt`, `/sitemap.xml`, canonical URL, WebSite schema.org.
+- Admin `/admin` (Basic auth, credentials in `/app/memory/test_credentials.md`).
+- DB cache layer with TTL (`App\Core\Cache`).
+
+## Implemented (2026-02)
+- PHP MVC skeleton, router, view engine, cache, seeder, DB migrations.
+- 4 source adapters: `DemoAdapter` (active), `UporniaCsvAdapter`, `XVideosCsvAdapter`, `XnxxRapidApiAdapter` (structure ready, disabled).
+- All pages listed under Core requirements — dark premium theme with red accent, Space Grotesk + Manrope typography.
+- Admin dashboard with source toggle, source import, cache clear, source status logs.
+- Sitemap & robots derive scheme/host from `X-Forwarded-*` headers.
+- Testing pass 2 confirmed both HIGH bugs fixed (age gate persistence, sitemap host).
+
+## Backlog / P1
+- P1 — Real source imports: paste an Upornia/XVideos CSV URL and enable it from admin, then click Import.
+- P1 — Continuous scheduler for imports (Emergent cron / `.emergent/crons.yml`).
+- P1 — Per-source RapidAPI configuration UI (currently only via env).
+- P2 — User accounts, favorites, watch history.
+- P2 — Comments and ratings.
+- P2 — Ad slot management.
+
+## Deployment note
+This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend` and `frontend` supervisor programs are still HTTP servers on the expected ports. If Emergent's deploy pipeline strictly requires FastAPI on 8001 (it does), the current setup satisfies it: FastAPI is running and is just acting as a proxy. MariaDB persistence lives on the pod volume — for a real deploy consider externalizing MariaDB or migrating to MongoDB.

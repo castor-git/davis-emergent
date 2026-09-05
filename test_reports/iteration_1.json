@@ -1,0 +1,47 @@
+{
+  "summary": "Smoke tested DAVISPORN PHP app end-to-end via the public preview URL. All key backend routes respond correctly (home, videos, search, video detail, category, tag, legal pages, robots.txt, sitemap.xml, 404, admin auth). Admin actions (cache clear, source toggle, source import) all return 302 with admin/admin123. Frontend UI loads, age gate modal renders, most testids present, /api/suggest works, search submit navigates correctly. However two real bugs were observed: (1) age-gate confirmation is NOT persisted in localStorage — the key davisporn_age_ok stays null after clicking [data-testid=age-confirm], so the age modal re-appears on every navigation and its overlay blocks subsequent clicks (e.g., [data-testid=apply-filters] on /videos); (2) /sitemap.xml <loc> URLs are hardcoded to https://127.0.0.1:9000/ instead of the public host.",
+  "tested_scope": ["frontend", "backend", "auth", "integration"],
+  "passed": [
+    "GET / -> 200 text/html",
+    "GET /videos -> 200",
+    "GET /search?q=model -> 200",
+    "GET /video/<slug> -> 200",
+    "GET /category/interracial -> 200",
+    "GET /tag/glasses -> 200",
+    "GET /terms, /privacy, /dmca, /2257 -> 200",
+    "GET /robots.txt -> 200 text/plain",
+    "GET /sitemap.xml -> 200 application/xml with <urlset>",
+    "GET /this-does-not-exist -> 404",
+    "GET /admin without creds -> 401 with WWW-Authenticate: Basic realm=Davisporn Admin",
+    "GET /admin with admin/admin123 -> 200 (Dashboard, Sources, inserted/updated flash markers)",
+    "POST /admin/cache/clear -> 302",
+    "POST /admin/source/toggle slug=demo -> 302 (toggled and restored)",
+    "POST /admin/source/import slug=demo -> 302",
+    "GET /api/suggest?q=de -> valid JSON with items[]",
+    "UI: age-gate modal renders on first load and [data-testid=age-confirm] is clickable",
+    "UI testids present on home: hero-explore, cat-chips, nav-new, nav-popular, search-input",
+    "UI: search submit navigates to /search?q=... and browse-grid renders",
+    "UI: /videos shows filters-form and pager"
+  ],
+  "failed": [
+    {
+      "area": "frontend / age-gate",
+      "issue": "Age verification is NOT persisted in localStorage. After clicking [data-testid=age-confirm], page.evaluate(localStorage.getItem('davisporn_age_ok')) returns null. The age-gate modal re-appears on every subsequent navigation and its overlay div#age-gate intercepts pointer events, blocking clicks on other elements (reproduced on /videos: 'apply-filters ... <div hidden id=age-gate> intercepts pointer events').",
+      "evidence": "Playwright log: 'PASS: age-confirm clicked, localStorage=None' and later 'Page.click Timeout ... <div hidden=\"\" id=\"age-gate\">…</div> intercepts pointer events' on /videos apply-filters.",
+      "priority": "HIGH"
+    },
+    {
+      "area": "backend / SEO sitemap",
+      "issue": "/sitemap.xml emits <loc>https://127.0.0.1:9000/...</loc> instead of using the public host (or configured APP_URL). This breaks SEO indexing and the spec requirement that sitemap contain public video URLs.",
+      "evidence": "curl https://media-nexus-111.preview.emergentagent.com/sitemap.xml returned '<url><loc>https://127.0.0.1:9000/</loc></url><url><loc>https://127.0.0.1:9000/videos</loc></url>...'",
+      "priority": "HIGH"
+    }
+  ],
+  "action_items": [
+    "Fix age-gate JS in /app/php/src/Views/layouts/main.php (or wherever the modal script lives) to write localStorage.setItem('davisporn_age_ok','1') on age-confirm click AND read it on page load to keep the modal hidden. The attribute hidden=\"\" is present in DOM but the overlay still blocks pointer events, so also ensure display:none / pointer-events:none when hidden.",
+    "Fix sitemap URL builder to derive scheme+host from the incoming request (HTTP_HOST / X-Forwarded-Host / configured APP_URL) instead of hardcoding 127.0.0.1:9000. Likely in /app/php/src/Controllers/SeoController.php."
+  ],
+  "success_rate": {"backend": "100%", "frontend": "~80%"},
+  "retest_needed": true,
+  "full_testing_deferred": true
+}

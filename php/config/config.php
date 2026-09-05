@@ -1,0 +1,44 @@
+<?php
+return [
+    'app_name' => getenv('APP_NAME') ?: 'DAVISPORN',
+    'tagline' => 'Premium HD adult tube — the finest network.',
+    'db' => [
+        'host' => getenv('DB_HOST') ?: '127.0.0.1',
+        'port' => (int)(getenv('DB_PORT') ?: 3306),
+        'name' => getenv('DB_NAME') ?: 'davisporn',
+        'user' => getenv('DB_USER') ?: 'dav',
+        'pass' => getenv('DB_PASS') ?: 'davpass',
+    ],
+    'admin' => [
+        'user' => getenv('ADMIN_USER') ?: 'admin',
+        'pass' => getenv('ADMIN_PASS') ?: 'admin123',
+    ],
+    'cache_ttl' => 900,
+    'per_page' => 24,
+    'sources' => [
+        'demo' => [
+            'enabled' => true,
+            'label' => 'Davis Demo Network',
+            'adapter' => 'DemoAdapter',
+        ],
+        'upornia_csv' => [
+            'enabled' => false,
+            'label' => 'Upornia CSV Feed',
+            'adapter' => 'UporniaCsvAdapter',
+            'feed_url' => getenv('UPORNIA_CSV_URL') ?: '',
+        ],
+        'xvideos_csv' => [
+            'enabled' => false,
+            'label' => 'XVideos CSV Import',
+            'adapter' => 'XVideosCsvAdapter',
+            'feed_url' => getenv('XVIDEOS_CSV_URL') ?: '',
+        ],
+        'xnxx_rapidapi' => [
+            'enabled' => false,
+            'label' => 'XNXX (RapidAPI)',
+            'adapter' => 'XnxxRapidApiAdapter',
+            'api_key' => getenv('RAPIDAPI_KEY') ?: '',
+            'host' => getenv('RAPIDAPI_HOST') ?: 'xnxx-videos-api.p.rapidapi.com',
+        ],
+    ],
+];
