@@ -66,7 +66,7 @@ $router->get('/{key}.txt', function($p) {
 $router->get('/api/health', fn() => View::json(['ok'=>true,'app'=>'davisporn-php']));
 $router->post('/api/prefs/pin', fn() => (new \App\Controllers\PrefsController())->pin());
 $router->post('/api/prefs/hide', fn() => (new \App\Controllers\PrefsController())->hide());
-$router->get('/api/prefs', fn() => (new \App\Controllers\PrefsController())->state());
+$router->get('/api/prefs', fn() => (new \App\Controllers\PrefsController())->stateJson());
 
 try {
     $router->dispatch($_SERVER['REQUEST_METHOD'] ?? 'GET', $uri);

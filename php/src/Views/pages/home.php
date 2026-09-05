@@ -92,9 +92,16 @@
 
 <section class="section">
   <div class="section-head"><h2>Trending tags</h2><a href="/tags">All tags →</a></div>
-  <div class="chips">
-    <?php foreach ($tags as $t): ?>
-      <a class="chip" href="/tag/<?= View::e($t['slug']) ?>">#<?= View::e($t['name']) ?> <span class="count"><?= (int)$t['video_count'] ?></span></a>
+  <div class="chips" data-testid="tag-chips">
+    <?php foreach ($tags as $t): $isPin = in_array($t['slug'], $tag_pins ?? [], true); ?>
+      <span class="chip-wrap<?= $isPin?' pinned':'' ?>" data-slug="<?= View::e($t['slug']) ?>" data-type="tag">
+        <a class="chip" href="/tag/<?= View::e($t['slug']) ?>"><?php if($isPin):?>📌 <?php endif;?>#<?= View::e($t['name']) ?> <span class="count"><?= (int)$t['video_count'] ?></span></a>
+        <button class="chip-act pin" title="<?= $isPin?'Unpin':'Pin' ?>" data-act="pin" data-testid="tag-pin-<?= View::e($t['slug']) ?>"><?= $isPin?'★':'☆' ?></button>
+        <button class="chip-act hide" title="Hide tag" data-act="hide" data-testid="tag-hide-<?= View::e($t['slug']) ?>">✕</button>
+      </span>
     <?php endforeach; ?>
   </div>
+  <?php if (!empty($tag_hides)): ?>
+  <p class="muted" style="margin-top:10px;font-size:.78rem">Hidden tags: <?= count($tag_hides) ?> — <a href="#" onclick="document.cookie='dv_tag_hides=;path=/;max-age=0';location.reload();return false" data-testid="unhide-tags">clear</a></p>
+  <?php endif; ?>
 </section>

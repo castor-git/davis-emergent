@@ -127,3 +127,9 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - Drawer sections: **📌 Pinned** (removable chips), **✕ Hidden** (removable chips), **Add category** (searchable list of up to 60 popular categories with inline `pin` / `hide` buttons that flip color when active).
 - Data endpoint: `GET /api/prefs` now returns `{pins, hides, labels, all}` including pretty names + video counts, so the drawer renders human-friendly labels rather than raw slugs.
 - JS: toggling in the drawer calls the existing `/api/prefs/pin` / `/api/prefs/hide` and re-renders state in place; "Clear hidden" removes every hide in one tap; "Apply & reload" bounces the page so home reorders instantly.
+
+## Iteration 16 (2026-02) — Tag Preferences
+- `Preferences` support class refactored to accept a `type` argument (`category` | `tag`) with dedicated cookies: `dv_pins`/`dv_hides` for categories and `dv_tag_pins`/`dv_tag_hides` for tags. Same 20-slug cap and 180-day expiry.
+- `PrefsController` accepts `type` in POST body; `GET /api/prefs` now returns `{category:{pins,hides,labels,all}, tag:{pins,hides,labels,all}, ...backwards-compat category keys}` so older drawer code keeps working.
+- Home "Trending tags" section now renders each chip with `☆` pin and `✕` hide buttons (`tag-pin-{slug}` / `tag-hide-{slug}`). Chips are reordered with pins first and hidden ones filtered out; a "Hidden tags: N — clear" line appears when needed.
+- Drawer gained two tabs (`pref-tab-category`, `pref-tab-tag`) each with its own pinned/hidden lists, search box and picker. Bulk "Clear hidden" wipes hides across both taxonomies.

@@ -59,20 +59,41 @@
   </div>
   <p class="muted">Pin what you love, hide what you don't. Everything applies instantly and follows you across visits.</p>
 
-  <div class="pref-section">
-    <h4>📌 Pinned <span class="muted" id="pref-pins-count">0</span></h4>
-    <div id="pref-pins-list" class="pref-list" data-testid="pref-pins-list"><span class="muted" style="font-size:.85rem">Nothing pinned yet.</span></div>
+  <div class="pref-tabs" role="tablist">
+    <button class="pref-tab active" data-tab="category" data-testid="pref-tab-category">Categories</button>
+    <button class="pref-tab" data-tab="tag" data-testid="pref-tab-tag">Tags</button>
   </div>
 
-  <div class="pref-section">
-    <h4>✕ Hidden <span class="muted" id="pref-hides-count">0</span></h4>
-    <div id="pref-hides-list" class="pref-list" data-testid="pref-hides-list"><span class="muted" style="font-size:.85rem">Nothing hidden.</span></div>
+  <div class="pref-tabpanel" data-tab-panel="category">
+    <div class="pref-section">
+      <h4>📌 Pinned <span class="muted" id="pref-pins-count">0</span></h4>
+      <div id="pref-pins-list" class="pref-list" data-testid="pref-pins-list"><span class="muted" style="font-size:.85rem">Nothing pinned yet.</span></div>
+    </div>
+    <div class="pref-section">
+      <h4>✕ Hidden <span class="muted" id="pref-hides-count">0</span></h4>
+      <div id="pref-hides-list" class="pref-list" data-testid="pref-hides-list"><span class="muted" style="font-size:.85rem">Nothing hidden.</span></div>
+    </div>
+    <div class="pref-section">
+      <h4>Add category</h4>
+      <input type="search" id="pref-search" placeholder="Type to search categories…" data-testid="pref-search" style="width:100%;background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit">
+      <div id="pref-picker" class="pref-picker" data-testid="pref-picker"></div>
+    </div>
   </div>
 
-  <div class="pref-section">
-    <h4>Add category</h4>
-    <input type="search" id="pref-search" placeholder="Type to search categories…" data-testid="pref-search" style="width:100%;background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit">
-    <div id="pref-picker" class="pref-picker" data-testid="pref-picker"></div>
+  <div class="pref-tabpanel" data-tab-panel="tag" hidden>
+    <div class="pref-section">
+      <h4>📌 Pinned <span class="muted" id="pref-tag-pins-count">0</span></h4>
+      <div id="pref-tag-pins-list" class="pref-list" data-testid="pref-tag-pins-list"><span class="muted" style="font-size:.85rem">Nothing pinned yet.</span></div>
+    </div>
+    <div class="pref-section">
+      <h4>✕ Hidden <span class="muted" id="pref-tag-hides-count">0</span></h4>
+      <div id="pref-tag-hides-list" class="pref-list" data-testid="pref-tag-hides-list"><span class="muted" style="font-size:.85rem">Nothing hidden.</span></div>
+    </div>
+    <div class="pref-section">
+      <h4>Add tag</h4>
+      <input type="search" id="pref-tag-search" placeholder="Type to search tags…" data-testid="pref-tag-search" style="width:100%;background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit">
+      <div id="pref-tag-picker" class="pref-picker" data-testid="pref-tag-picker"></div>
+    </div>
   </div>
 
   <div class="pref-actions">

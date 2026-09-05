@@ -61,6 +61,10 @@ h3{font-size:1.05rem}
 .pref-picker .pref-row .acts button.on-pin{background:var(--gold);color:#111;border-color:var(--gold)}
 .pref-picker .pref-row .acts button.on-hide{background:var(--accent);color:#fff;border-color:var(--accent)}
 .pref-actions{margin-top:20px;display:flex;gap:8px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--border)}
+.pref-tabs{display:flex;gap:4px;margin:14px 0 6px;border-bottom:1px solid var(--border)}
+.pref-tab{background:transparent;border:0;color:var(--muted);padding:8px 14px;font-family:inherit;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;font-size:.9rem}
+.pref-tab.active{color:#fff;border-bottom-color:var(--accent)}
+.pref-tab:hover{color:#fff}
 .suggest{position:absolute;top:calc(100% + 6px);left:0;right:0;background:#0f1115;border:1px solid var(--border);border-radius:8px;list-style:none;margin:0;padding:6px;z-index:60;max-height:320px;overflow:auto}
 .suggest li{padding:8px 10px;border-radius:6px;cursor:pointer;font-size:.9rem}
 .suggest li:hover,.suggest li.active{background:#1a1d23;color:var(--accent-2)}

@@ -26,8 +26,15 @@ class HomeController {
 
         // Reorder chips: pinned first, hidden filtered out
         if ($pins || $hides) {
-            $data['categories'] = self::reorderCategories($data['categories'], $pins, $hides);
+            $data['categories'] = self::reorderChips($data['categories'], $pins, $hides);
         }
+        $tagPins = \App\Support\Preferences::pins('tag');
+        $tagHides = \App\Support\Preferences::hides('tag');
+        if ($tagPins || $tagHides) {
+            $data['tags'] = self::reorderChips($data['tags'], $tagPins, $tagHides);
+        }
+        $data['tag_pins'] = $tagPins;
+        $data['tag_hides'] = $tagHides;
 
         $data['trending_landings'] = \App\Models\Landing::trending(6, $boost);
         $data['top_category'] = $topCat;
@@ -45,9 +52,9 @@ class HomeController {
         View::render('pages/home', $data + ['title' => App::config('app_name') . ' — ' . App::config('tagline')]);
     }
 
-    private static function reorderCategories(array $cats, array $pins, array $hides): array {
+    private static function reorderChips(array $rows, array $pins, array $hides): array {
         $pinnedRows = []; $rest = [];
-        foreach ($cats as $c) {
+        foreach ($rows as $c) {
             if (in_array($c['slug'], $hides, true)) continue;
             if (in_array($c['slug'], $pins, true)) $pinnedRows[array_search($c['slug'], $pins, true)] = $c;
             else $rest[] = $c;

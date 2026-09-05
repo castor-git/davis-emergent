@@ -53,87 +53,117 @@
     if (getComputedStyle(nav).display === 'none'){ nav.style.display = 'flex'; nav.style.flexDirection='column'; nav.style.position='absolute'; nav.style.top='60px'; nav.style.right='16px'; nav.style.background='#131519'; nav.style.padding='10px'; nav.style.borderRadius='10px'; nav.style.border='1px solid #22262d'; }
     else nav.style.display = 'none';
   });
-  // Category preferences (pin / hide) — POST to /api/prefs/{pin|hide}
+  // Category & tag preferences (pin / hide) — POST to /api/prefs/{pin|hide}
   document.querySelectorAll('.chip-wrap .chip-act').forEach(function(btn){
     btn.addEventListener('click', function(e){
       e.preventDefault(); e.stopPropagation();
       const wrap = btn.closest('.chip-wrap'); if (!wrap) return;
-      const slug = wrap.getAttribute('data-slug'); const act = btn.getAttribute('data-act');
-      const fd = new FormData(); fd.append('slug', slug);
+      const slug = wrap.getAttribute('data-slug');
+      const type = wrap.getAttribute('data-type') || 'category';
+      const act = btn.getAttribute('data-act');
+      const fd = new FormData(); fd.append('slug', slug); fd.append('type', type);
       fetch('/api/prefs/' + act, {method:'POST', body: fd, credentials:'same-origin'})
         .then(r=>r.json()).then(function(){ location.reload(); })
         .catch(function(){});
     });
   });
-  // Preferences drawer
+  // Preferences drawer (Categories + Tags tabs)
   const openBtn = document.getElementById('prefbtn');
   const drawer = document.getElementById('pref-drawer');
   const backdrop = document.getElementById('pref-backdrop');
   const closeBtn = document.getElementById('pref-close');
-  const pinsEl = document.getElementById('pref-pins-list');
-  const hidesEl = document.getElementById('pref-hides-list');
-  const pinsCnt = document.getElementById('pref-pins-count');
-  const hidesCnt = document.getElementById('pref-hides-count');
-  const pickerEl = document.getElementById('pref-picker');
-  const searchEl = document.getElementById('pref-search');
   const applyBtn = document.getElementById('pref-apply');
   const clearHidesBtn = document.getElementById('pref-clear-hides');
-  let prefState = {pins:[], hides:[], labels:{}, all:[]};
+  let prefState = {category:{pins:[],hides:[],labels:{},all:[]}, tag:{pins:[],hides:[],labels:{},all:[]}};
+  const search = {category: null, tag: null};
 
-  function renderPrefState(){
-    const label = s => (prefState.labels[s] && prefState.labels[s].name) || s;
-    pinsCnt.textContent = '(' + prefState.pins.length + ')';
-    hidesCnt.textContent = '(' + prefState.hides.length + ')';
-    pinsEl.innerHTML = prefState.pins.length
-      ? prefState.pins.map(s => '<span class="pref-item pin" data-slug="'+s+'" data-testid="pref-pin-'+s+'">📌 '+label(s)+'<button class="pref-x" data-remove="pin" data-slug="'+s+'" aria-label="Unpin">×</button></span>').join('')
-      : '<span class="muted" style="font-size:.85rem">Nothing pinned yet.</span>';
-    hidesEl.innerHTML = prefState.hides.length
-      ? prefState.hides.map(s => '<span class="pref-item hide" data-slug="'+s+'" data-testid="pref-hide-'+s+'">✕ '+label(s)+'<button class="pref-x" data-remove="hide" data-slug="'+s+'" aria-label="Unhide">×</button></span>').join('')
-      : '<span class="muted" style="font-size:.85rem">Nothing hidden.</span>';
-    renderPicker(searchEl ? searchEl.value : '');
+  function ids(type){
+    return type === 'tag'
+      ? {pins:'pref-tag-pins-list', hides:'pref-tag-hides-list', pc:'pref-tag-pins-count', hc:'pref-tag-hides-count', picker:'pref-tag-picker', search:'pref-tag-search'}
+      : {pins:'pref-pins-list', hides:'pref-hides-list', pc:'pref-pins-count', hc:'pref-hides-count', picker:'pref-picker', search:'pref-search'};
   }
-  function renderPicker(q){
+  function labelOf(type, s){ return (prefState[type].labels[s] && prefState[type].labels[s].name) || s; }
+  function pillPrefix(type){ return type === 'tag' ? '#' : ''; }
+
+  function renderType(type){
+    const el = ids(type); const st = prefState[type];
+    document.getElementById(el.pc).textContent = '(' + st.pins.length + ')';
+    document.getElementById(el.hc).textContent = '(' + st.hides.length + ')';
+    document.getElementById(el.pins).innerHTML = st.pins.length
+      ? st.pins.map(s => '<span class="pref-item pin" data-slug="'+s+'" data-type="'+type+'" data-testid="pref-'+(type==='tag'?'tag-':'')+'pin-'+s+'">📌 '+pillPrefix(type)+labelOf(type,s)+'<button class="pref-x" data-remove="pin" data-type="'+type+'" data-slug="'+s+'">×</button></span>').join('')
+      : '<span class="muted" style="font-size:.85rem">Nothing pinned yet.</span>';
+    document.getElementById(el.hides).innerHTML = st.hides.length
+      ? st.hides.map(s => '<span class="pref-item hide" data-slug="'+s+'" data-type="'+type+'" data-testid="pref-'+(type==='tag'?'tag-':'')+'hide-'+s+'">✕ '+pillPrefix(type)+labelOf(type,s)+'<button class="pref-x" data-remove="hide" data-type="'+type+'" data-slug="'+s+'">×</button></span>').join('')
+      : '<span class="muted" style="font-size:.85rem">Nothing hidden.</span>';
+    renderPicker(type, search[type] || '');
+  }
+  function renderPicker(type, q){
     q = (q||'').trim().toLowerCase();
-    const rows = prefState.all
+    const st = prefState[type];
+    const rows = st.all
       .filter(c => q === '' || c.name.toLowerCase().includes(q) || c.slug.includes(q))
       .slice(0, 40)
       .map(c => {
-        const pinned = prefState.pins.includes(c.slug);
-        const hidden = prefState.hides.includes(c.slug);
-        return '<div class="pref-row" data-slug="'+c.slug+'" data-testid="pref-picker-row-'+c.slug+'">'
-          + '<div><span class="name">'+c.name+'</span><span class="cnt">'+c.count+'</span></div>'
+        const pinned = st.pins.includes(c.slug);
+        const hidden = st.hides.includes(c.slug);
+        return '<div class="pref-row" data-slug="'+c.slug+'" data-type="'+type+'" data-testid="pref-'+(type==='tag'?'tag-':'')+'picker-row-'+c.slug+'">'
+          + '<div><span class="name">'+pillPrefix(type)+c.name+'</span><span class="cnt">'+c.count+'</span></div>'
           + '<div class="acts">'
           +   '<button data-toggle="pin" class="'+(pinned?'on-pin':'')+'">'+(pinned?'📌 pinned':'pin')+'</button>'
           +   '<button data-toggle="hide" class="'+(hidden?'on-hide':'')+'">'+(hidden?'✕ hidden':'hide')+'</button>'
           + '</div></div>';
       });
-    pickerEl.innerHTML = rows.length ? rows.join('') : '<p class="muted" style="font-size:.82rem;padding:8px">No categories match.</p>';
+    document.getElementById(ids(type).picker).innerHTML = rows.length ? rows.join('') : '<p class="muted" style="font-size:.82rem;padding:8px">No matches.</p>';
   }
   function loadPrefs(){
-    return fetch('/api/prefs', {credentials:'same-origin'}).then(r=>r.json()).then(s => { prefState = s; renderPrefState(); });
+    return fetch('/api/prefs', {credentials:'same-origin'}).then(r=>r.json()).then(s => {
+      prefState.category = s.category || {pins:[],hides:[],labels:{},all:[]};
+      prefState.tag = s.tag || {pins:[],hides:[],labels:{},all:[]};
+      renderType('category'); renderType('tag');
+    });
   }
-  function toggle(act, slug){
-    const fd = new FormData(); fd.append('slug', slug);
+  function toggle(act, type, slug){
+    const fd = new FormData(); fd.append('slug', slug); fd.append('type', type);
     return fetch('/api/prefs/' + act, {method:'POST', body: fd, credentials:'same-origin'}).then(r=>r.json())
-      .then(s => { prefState.pins = s.pins; prefState.hides = s.hides; renderPrefState(); });
+      .then(s => { prefState.category = s.category; prefState.tag = s.tag; renderType('category'); renderType('tag'); });
   }
-  function openDrawer(){
-    drawer.hidden = false; backdrop.hidden = false;
-    loadPrefs();
-  }
+  function openDrawer(){ drawer.hidden = false; backdrop.hidden = false; loadPrefs(); }
   function closeDrawer(){ drawer.hidden = true; backdrop.hidden = true; }
   if (openBtn) openBtn.addEventListener('click', openDrawer);
   if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
   if (backdrop) backdrop.addEventListener('click', closeDrawer);
-  if (searchEl) searchEl.addEventListener('input', function(){ renderPicker(this.value); });
+
+  // Tab switching
+  document.querySelectorAll('.pref-tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.pref-tab').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      const which = t.getAttribute('data-tab');
+      document.querySelectorAll('[data-tab-panel]').forEach(p => p.hidden = p.getAttribute('data-tab-panel') !== which);
+    });
+  });
+
+  // Live search per tab
+  document.addEventListener('input', function(e){
+    if (e.target && e.target.id === 'pref-search') { search.category = e.target.value; renderPicker('category', e.target.value); }
+    if (e.target && e.target.id === 'pref-tag-search') { search.tag = e.target.value; renderPicker('tag', e.target.value); }
+  });
+
   if (drawer) drawer.addEventListener('click', function(e){
     const rm = e.target.closest('[data-remove]');
-    if (rm) { toggle(rm.getAttribute('data-remove'), rm.getAttribute('data-slug')); return; }
+    if (rm) { toggle(rm.getAttribute('data-remove'), rm.getAttribute('data-type') || 'category', rm.getAttribute('data-slug')); return; }
     const tg = e.target.closest('[data-toggle]');
-    if (tg) { toggle(tg.getAttribute('data-toggle'), tg.closest('.pref-row').getAttribute('data-slug')); return; }
+    if (tg) {
+      const row = tg.closest('.pref-row');
+      toggle(tg.getAttribute('data-toggle'), row.getAttribute('data-type') || 'category', row.getAttribute('data-slug'));
+      return;
+    }
   });
   if (applyBtn) applyBtn.addEventListener('click', function(){ location.reload(); });
   if (clearHidesBtn) clearHidesBtn.addEventListener('click', function(){
-    Promise.all(prefState.hides.map(s => toggle('hide', s))).then(()=>{});
+    const jobs = [];
+    prefState.category.hides.forEach(s => jobs.push(toggle('hide', 'category', s)));
+    prefState.tag.hides.forEach(s => jobs.push(toggle('hide', 'tag', s)));
+    Promise.all(jobs);
   });
 })();
