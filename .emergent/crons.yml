@@ -6,3 +6,10 @@ crons:
     endpoint: "{{BASE_URL}}/api/cron/nightly-import"
     method: POST
     enabled: true
+  - name: daily-suggest
+    description: "Proposes up to 3 draft landing pages from freshest zero-result search keywords"
+    cron: "30 3 * * *"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/daily-suggest"
+    method: POST
+    enabled: true

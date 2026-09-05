@@ -113,7 +113,7 @@ class Schema {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
         // Idempotent add-column migration for existing rows
-        foreach (['meta_title VARCHAR(191) NULL','meta_description VARCHAR(300) NULL','og_image VARCHAR(500) NULL'] as $spec) {
+        foreach (['meta_title VARCHAR(191) NULL','meta_description VARCHAR(300) NULL','og_image VARCHAR(500) NULL',"template VARCHAR(24) NOT NULL DEFAULT 'grid'","suggested TINYINT(1) NOT NULL DEFAULT 0"] as $spec) {
             [$col] = explode(' ', $spec);
             $has = $db->query("SHOW COLUMNS FROM landings LIKE " . $db->quote($col))->fetch();
             if (!$has) $db->exec("ALTER TABLE landings ADD COLUMN $spec");

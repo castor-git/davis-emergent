@@ -29,4 +29,20 @@ class CronController {
         }
         \App\Core\Cache::forget();
     }
+
+    public function dailySuggest(): void {
+        $secret = getenv('WEBHOOK_CRON_SECRET') ?: '';
+        $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        $token = (str_starts_with($auth, 'Bearer ')) ? substr($auth, 7) : '';
+        if (!$secret || !hash_equals($secret, $token)) {
+            View::json(['ok'=>false,'error'=>'unauthorized'], 401);
+            return;
+        }
+        View::json(['ok'=>true,'event'=>'daily-suggest-accepted']);
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        else { ignore_user_abort(true); flush(); }
+
+        try { \App\Support\LandingSuggester::run(3); }
+        catch (\Throwable $e) { error_log('landing suggester: ' . $e->getMessage()); }
+    }
 }

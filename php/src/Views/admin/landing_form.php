@@ -15,6 +15,17 @@
   </label>
   <label style="display:flex;align-items:center;gap:8px;font-size:.9rem;color:#c8cdd6"><input type="checkbox" name="active" value="1" <?= $p['active']?'checked':'' ?> data-testid="l-active"> Active (visible)</label>
 
+  <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:6px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Template
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <?php foreach (['grid'=>'Grid — classic responsive tile wall','editorial'=>'Editorial — hero pick + magazine copy','top10'=>'Top-10 — ranked list with gold/silver/bronze badges'] as $k=>$lb): ?>
+        <label style="flex:1;min-width:220px;background:#0f1115;border:1px solid <?= $p['template']===$k?'var(--accent)':'var(--border)' ?>;border-radius:8px;padding:10px;cursor:pointer;display:flex;gap:8px;align-items:flex-start">
+          <input type="radio" name="template" value="<?= $k ?>" <?= $p['template']===$k?'checked':'' ?> data-testid="l-tpl-<?= $k ?>" style="margin-top:3px">
+          <span style="font-family:inherit;font-size:.82rem;color:#c8cdd6;text-transform:none;font-weight:500;letter-spacing:0"><?= View::e($lb) ?></span>
+        </label>
+      <?php endforeach; ?>
+    </div>
+  </label>
+
   <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Intro copy
     <textarea name="intro" rows="4" data-testid="l-intro" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit"><?= View::e($p['intro']) ?></textarea>
   </label>

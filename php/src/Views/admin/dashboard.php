@@ -137,20 +137,22 @@
 </table>
 
 <h2 style="margin-top:32px">Landing pages</h2>
-<p class="muted">Curated collection pages that turn search intent into visits. Click <strong>+ Landing</strong> next to a zero-result keyword above to spin one up in one click.</p>
+<p class="muted">Curated collection pages that turn search intent into visits. Click <strong>+ Landing</strong> next to a zero-result keyword above to spin one up in one click. Draft suggestions from the nightly job appear here with the <span class="pill off">DRAFT</span> badge.</p>
 <div style="margin-bottom:12px"><a href="/admin/landings/new" class="btn-primary" data-testid="new-landing">+ Create landing page</a></div>
 <table class="data" data-testid="landings-table">
-  <thead><tr><th>Slug</th><th>Title</th><th>Keyword</th><th>Categories/Tags</th><th>Views</th><th>Active</th><th></th></tr></thead>
+  <thead><tr><th>Slug</th><th>Title</th><th>Keyword</th><th>Tpl</th><th>Cat/Tag</th><th>Views</th><th>Status</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($landings as $l):
     $cats = json_decode($l['categories_json'] ?: '[]', true) ?: [];
     $tags = json_decode($l['tags_json'] ?: '[]', true) ?: [];
+    $isDraft = !$l['active'] && !empty($l['suggested']);
   ?>
-    <tr>
+    <tr <?= $isDraft ? 'style="background:rgba(255,176,32,.06)"' : '' ?>>
       <td><a href="/l/<?= View::e($l['slug']) ?>" target="_blank"><code>/l/<?= View::e($l['slug']) ?></code></a></td>
-      <td><?= View::e($l['title']) ?></td>
+      <td><?= View::e($l['title']) ?><?= $isDraft ? ' <span class="pill off" style="background:rgba(255,176,32,.14);color:#ffd076;margin-left:6px">DRAFT SUGGEST</span>' : '' ?></td>
       <td><?= View::e($l['keyword'] ?: '—') ?></td>
-      <td class="muted" style="font-size:.82rem"><?= count($cats) ?> cat · <?= count($tags) ?> tag</td>
+      <td><code><?= View::e($l['template'] ?? 'grid') ?></code></td>
+      <td class="muted" style="font-size:.82rem"><?= count($cats) ?>·<?= count($tags) ?></td>
       <td><?= (int)$l['views'] ?></td>
       <td><span class="pill <?= $l['active']?'on':'off' ?>"><?= $l['active']?'ON':'OFF' ?></span></td>
       <td style="text-align:right;white-space:nowrap">
@@ -159,6 +161,6 @@
       </td>
     </tr>
   <?php endforeach; ?>
-  <?php if (!$landings): ?><tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
+  <?php if (!$landings): ?><tr><td colspan="8" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
   </tbody>
 </table>

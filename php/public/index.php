@@ -48,6 +48,15 @@ $router->post('/admin/cache/clear', fn() => (new AdminController())->clearCache(
 
 // Cron webhook (called by the Emergent platform scheduler)
 $router->post('/api/cron/nightly-import', fn() => (new \App\Controllers\CronController())->nightlyImport());
+$router->post('/api/cron/daily-suggest', fn() => (new \App\Controllers\CronController())->dailySuggest());
+
+// IndexNow key verification file — must be reachable at /{key}.txt
+$router->get('/{key}.txt', function($p) {
+    $key = \App\Support\PingService::indexNowKey();
+    if ($p['key'] !== $key) { http_response_code(404); echo 'not found'; return; }
+    header('Content-Type: text/plain');
+    echo $key;
+});
 
 // Health for FastAPI proxy
 $router->get('/api/health', fn() => View::json(['ok'=>true,'app'=>'davisporn-php']));

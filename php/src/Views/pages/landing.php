@@ -1,7 +1,7 @@
-<?php use App\Core\View; $l = $landing; $cats = json_decode($l['categories_json'] ?: '[]', true) ?: []; $tags = json_decode($l['tags_json'] ?: '[]', true) ?: []; ?>
-<section class="hero" data-testid="landing-hero">
+<?php use App\Core\View; $l = $landing; $cats = json_decode($l['categories_json'] ?: '[]', true) ?: []; $tags = json_decode($l['tags_json'] ?: '[]', true) ?: []; $template = $l['template'] ?? 'grid'; ?>
+<section class="hero landing-hero-<?= View::e($template) ?>" data-testid="landing-hero">
   <div class="badge-row" style="margin-bottom:12px">
-    <span class="badge hot">CURATED COLLECTION</span>
+    <span class="badge hot">CURATED · <?= strtoupper(View::e($template)) ?></span>
     <?php if (!empty($l['keyword'])): ?><span class="badge">Search intent: “<?= View::e($l['keyword']) ?>”</span><?php endif; ?>
     <span class="badge"><?= number_format((int)$total) ?> videos</span>
   </div>
@@ -19,12 +19,46 @@
 {"@context":"https://schema.org","@type":"CollectionPage","name":"<?= View::e(str_replace('"','', $l['title'])) ?>","description":"<?= View::e(str_replace('"','', substr($l['intro'] ?? '',0,180))) ?>","url":"<?= View::e('/l/'.$l['slug']) ?>"}
 </script>
 
-<?php if (!empty($items)): ?>
-<div class="grid" data-testid="landing-grid">
-  <?php foreach ($items as $video) include __DIR__.'/../partials/card.php'; ?>
-</div>
+<?php if (empty($items)): ?>
+  <div class="doc"><p>This collection is still being populated. Come back soon — imports run every 6 hours.</p></div>
+
+<?php elseif ($template === 'top10'): ?>
+  <ol class="top10-list" data-testid="landing-top10">
+    <?php foreach (array_slice($items, 0, 10) as $rank => $video): $rank++; ?>
+      <li class="top10-item" data-rank="<?= $rank ?>">
+        <span class="top10-rank">#<?= $rank ?></span>
+        <div class="top10-body"><?php include __DIR__.'/../partials/card.php'; ?></div>
+      </li>
+    <?php endforeach; ?>
+  </ol>
+  <?php if (count($items) > 10): ?>
+    <h3 style="margin-top:26px">More in this collection</h3>
+    <div class="grid" data-testid="landing-grid">
+      <?php foreach (array_slice($items, 10) as $video) include __DIR__.'/../partials/card.php'; ?>
+    </div>
+  <?php endif; ?>
+
+<?php elseif ($template === 'editorial'): ?>
+  <div class="editorial-lead" data-testid="landing-editorial">
+    <?php $hero = $items[0]; ?>
+    <div class="editorial-hero"><?php $video = $hero; include __DIR__.'/../partials/card.php'; ?></div>
+    <div class="editorial-copy">
+      <h2>Editor's pick</h2>
+      <p class="muted"><?= View::e(mb_substr(strip_tags($l['intro'] ?? ''), 0, 320)) ?></p>
+      <p><strong>Why we love it:</strong> handpicked scenes updated every 6 hours across <?= count($cats) ?> categories and <?= count($tags) ?> tags.</p>
+    </div>
+  </div>
+  <?php if (count($items) > 1): ?>
+    <h3 style="margin-top:26px">The rest of the story</h3>
+    <div class="grid">
+      <?php foreach (array_slice($items, 1) as $video) include __DIR__.'/../partials/card.php'; ?>
+    </div>
+  <?php endif; ?>
+
 <?php else: ?>
-<div class="doc"><p>This collection is still being populated. Come back soon — imports run every 6 hours.</p></div>
+  <div class="grid" data-testid="landing-grid">
+    <?php foreach ($items as $video) include __DIR__.'/../partials/card.php'; ?>
+  </div>
 <?php endif; ?>
 
 <?php if ($pages > 1):

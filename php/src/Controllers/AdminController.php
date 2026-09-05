@@ -40,13 +40,14 @@ class AdminController {
     public function landingForm(): void {
         $this->auth();
         $id = (int)($_GET['id'] ?? 0);
-        $prefill = ['id'=>0,'slug'=>'','title'=>'','keyword'=>'','intro'=>'','meta_title'=>'','meta_description'=>'','og_image'=>'','categories'=>[],'tags'=>[],'active'=>1];
+        $prefill = ['id'=>0,'slug'=>'','title'=>'','keyword'=>'','intro'=>'','meta_title'=>'','meta_description'=>'','og_image'=>'','template'=>'grid','categories'=>[],'tags'=>[],'active'=>1];
         if ($id) {
             $l = \App\Models\Landing::find($id);
             if ($l) $prefill = [
                 'id'=>$id, 'slug'=>$l['slug'], 'title'=>$l['title'], 'keyword'=>$l['keyword'] ?? '',
                 'intro'=>$l['intro'] ?? '', 'active'=>(int)$l['active'],
                 'meta_title'=>$l['meta_title'] ?? '', 'meta_description'=>$l['meta_description'] ?? '', 'og_image'=>$l['og_image'] ?? '',
+                'template'=>$l['template'] ?? 'grid',
                 'categories'=>json_decode($l['categories_json'] ?: '[]', true) ?: [],
                 'tags'=>json_decode($l['tags_json'] ?: '[]', true) ?: [],
             ];
@@ -79,6 +80,7 @@ class AdminController {
             'meta_title' => $_POST['meta_title'] ?? '',
             'meta_description' => $_POST['meta_description'] ?? '',
             'og_image' => $_POST['og_image'] ?? '',
+            'template' => $_POST['template'] ?? 'grid',
             'categories' => $_POST['categories'] ?? [],
             'tags' => $_POST['tags'] ?? [],
             'active' => isset($_POST['active']) ? 1 : 0,
@@ -86,7 +88,20 @@ class AdminController {
         $newId = \App\Models\Landing::save($data, $id);
         \App\Core\Cache::forget();
         $l = \App\Models\Landing::find($newId);
-        header('Location: /admin?msg=' . urlencode('Landing saved: /l/' . $l['slug']));
+
+        $msg = 'Landing saved: /l/' . $l['slug'];
+        // Ping IndexNow + Google + Bing when the landing is active
+        if ((int)$l['active'] === 1) {
+            $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $scheme = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'https';
+            $url = $scheme . '://' . $host . '/l/' . rawurlencode($l['slug']);
+            try {
+                $r = \App\Support\PingService::submit($url);
+                $codes = array_map(fn($x)=>$x['status'] ?? 0, $r);
+                $msg .= ' — pinged: IndexNow=' . ($codes['indexnow'] ?? '?') . ' Google=' . ($codes['google'] ?? '?') . ' Bing=' . ($codes['bing'] ?? '?');
+            } catch (\Throwable $e) { $msg .= ' — ping failed: ' . $e->getMessage(); }
+        }
+        header('Location: /admin?msg=' . urlencode($msg));
         exit;
     }
 

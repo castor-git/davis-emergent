@@ -75,3 +75,12 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 ## Iteration 7 (2026-02) — Sitemap Landings + Social Preview Tester
 - `/sitemap.xml` now includes every active landing with lastmod, `<changefreq>daily</changefreq>` and `<priority>0.7</priority>` so Google discovers them on the next crawl.
 - Landing form (only when editing an existing landing) shows a **Social preview tester** row with 4 buttons: X Card Validator, Preview on X (tweet intent with URL), Facebook Sharing Debugger, LinkedIn Post Inspector — each opens the validator/preview with the live landing URL prefilled. On the create form it shows a "Publish first" hint.
+
+## Iteration 8 (2026-02) — Auto Suggest + Templates + Ping
+- Cron `daily-suggest` at 03:30 UTC (`POST /api/cron/daily-suggest`, Bearer-protected). `LandingSuggester::run(3)` picks the top 3 zero-result queries from the last 7 days that don't already have a landing and creates them as DRAFT (active=0, suggested=1). Admin dashboard highlights suggested drafts with an amber `DRAFT SUGGEST` badge.
+- 3 templates (`grid`, `editorial`, `top10`) stored on `landings.template`. `pages/landing.php` switches layout:
+  - grid — classic responsive tile wall (default)
+  - editorial — hero pick + magazine copy + secondary grid
+  - top10 — ranked list 1-10 with gold/silver/bronze rank badges
+- Radio-card template picker in the landing form.
+- `PingService` submits every newly ACTIVE landing to IndexNow (Bing+Yandex+Seznam), Google and Bing sitemap ping (best-effort). IndexNow key served at `/{key}.txt`, key auto-generated at `storage/indexnow.key`. Ping results logged to `pings` table.
