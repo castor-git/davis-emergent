@@ -36,15 +36,19 @@
 
 <?php if (!empty($trending_landings)): ?>
 <section class="section">
-  <div class="section-head"><h2>Trending collections</h2><a href="/admin" class="muted" style="font-size:.75rem">manage →</a></div>
+  <div class="section-head"><h2>Trending collections<?php if (!empty($top_category)): ?> <span class="badge hot" style="margin-left:8px;font-size:.65rem;vertical-align:middle" data-testid="taste-badge">TUNED TO YOUR TASTE</span><?php endif; ?></h2><a href="/admin" class="muted" style="font-size:.75rem">manage →</a></div>
   <div class="landing-tiles" data-testid="trending-landings">
     <?php foreach ($trending_landings as $tl):
       $ctr = ((int)$tl['imps'] >= 5 && (int)$tl['imps'] > 0) ? number_format(($tl['clks']*100)/$tl['imps'],1).'%' : null;
+      $isForYou = !empty($top_category) && !empty($tl['boost']);
     ?>
-    <a class="landing-tile" href="/l/<?= View::e($tl['slug']) ?>" data-testid="trending-tile-<?= (int)$tl['id'] ?>">
+    <a class="landing-tile<?= $isForYou ? ' for-you' : '' ?>" href="/l/<?= View::e($tl['slug']) ?>" data-testid="trending-tile-<?= (int)$tl['id'] ?>">
       <div class="landing-tile-bg" <?php if (!empty($tl['og_image'])): ?>style="background-image:url('<?= View::e($tl['og_image']) ?>')"<?php endif; ?>></div>
       <div class="landing-tile-content">
-        <span class="badge hot" style="align-self:flex-start"><?= strtoupper(View::e($tl['template'] ?? 'grid')) ?></span>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <span class="badge hot"><?= strtoupper(View::e($tl['template'] ?? 'grid')) ?></span>
+          <?php if ($isForYou): ?><span class="badge" style="background:rgba(255,176,32,.18);color:#ffd076;border-color:rgba(255,176,32,.4)" data-testid="for-you-<?= (int)$tl['id'] ?>">★ FOR YOU</span><?php endif; ?>
+        </div>
         <h3><?= View::e($tl['title']) ?></h3>
         <?php if (!empty($tl['keyword'])): ?><div class="muted" style="font-size:.78rem">#<?= View::e($tl['keyword']) ?></div><?php endif; ?>
         <div class="landing-tile-meta">

@@ -53,6 +53,8 @@ class BrowseController {
         Video::incrementViews((int)$video['id']);
         $cats = Video::categoriesFor((int)$video['id']);
         $tags = Video::tagsFor((int)$video['id']);
+        // Personalization signal — remember which categories this visitor consumes
+        \App\Support\Personalization::record(array_column($cats, 'slug'));
         $related = Video::related((int)$video['id'], 8);
         View::render('pages/video', [
             'title' => $video['title'],

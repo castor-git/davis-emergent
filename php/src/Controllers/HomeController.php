@@ -6,6 +6,8 @@ use App\Models\{Video, Taxonomy};
 
 class HomeController {
     public function index(): void {
+        // Personalized bits (top category) live outside the shared home cache
+        $topCat = \App\Support\Personalization::topCategory();
         $data = Cache::remember('home:v1', 300, function () {
             return [
                 'featured' => Video::paginate(['featured'=>1,'sort'=>'popular'], 1, 8)['items'],
@@ -14,9 +16,10 @@ class HomeController {
                 'top_rated' => Video::paginate(['sort'=>'rating'], 1, 6)['items'],
                 'categories' => Taxonomy::popularCategories(18),
                 'tags' => Taxonomy::popularTags(30),
-                'trending_landings' => \App\Models\Landing::trending(6),
             ];
         });
+        $data['trending_landings'] = \App\Models\Landing::trending(6, $topCat);
+        $data['top_category'] = $topCat;
         View::render('pages/home', $data + ['title' => App::config('app_name') . ' — ' . App::config('tagline')]);
     }
 }

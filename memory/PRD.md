@@ -100,3 +100,10 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - Tile design: 240×180 card with optional OG image background, template badge (GRID/EDITORIAL/TOP10), title, keyword tag and `👁 views · CTR x.x%` footer. `data-testid=trending-landings` and `trending-tile-{id}`.
 - Cache-integrated (home:v1 already TTL 5 min; invalidated by admin actions).
 - **Resilience fix**: pod restarts wipe `/usr/*` (php + mariadb binaries) and `/var/lib/mysql`. Added `/app/php/bootstrap.sh` (apt-installs php-cli+mariadb-server + initializes datadir if missing) and `/app/php/db_seed.sh` (creates DB + user). Supervisor conf now runs `bootstrap.sh &&` before each start of `mariadb` and `php-app`, so a pod restart auto-recovers within ~60s. Note: DB data itself is not persistent (it lives outside `/app`/`/root`) — landings, ads, search-queries and A/B stats reset on each pod restart until we move the datadir under `/app/mysql`.
+
+## Iteration 12 (2026-02) — Home Personalization
+- New `App\Support\Personalization` writes/reads a compact `dv_taste` cookie (`slug:count;slug:count`, capped at 10, 90-day expiry).
+- `BrowseController::video` calls `Personalization::record()` with the current video's category slugs so the visitor's taste self-builds while browsing.
+- `Landing::trending()` accepts an optional `boostCategory` and computes a per-row `boost` column via `JSON_CONTAINS(l.categories_json, JSON_QUOTE(?))`. Order: boost DESC → CTR DESC → views DESC.
+- Home template shows a `TUNED TO YOUR TASTE` badge when personalization is active and marks each matching tile with a gold `★ FOR YOU` badge plus a subtle amber outer glow.
+- Cache: kept the shared `home:v1` for the non-personalized sections and computes `trending_landings` outside the cache on every request (cheap SQL, negligible cost).
