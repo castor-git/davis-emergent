@@ -23,8 +23,36 @@
   <div class="doc"><p>This collection is still being populated. Come back soon — imports run every 6 hours.</p></div>
 
 <?php elseif ($template === 'top10'): ?>
+  <?php
+    $top = array_slice($items, 0, 10);
+    $host = ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'https') . '://' . ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? '');
+    $listItems = [];
+    foreach ($top as $rank => $it) {
+        $listItems[] = [
+            '@type' => 'ListItem',
+            'position' => $rank + 1,
+            'url' => $host . '/video/' . $it['slug'],
+            'item' => [
+                '@type' => 'VideoObject',
+                'name' => $it['title'],
+                'thumbnailUrl' => $it['thumbnail'],
+                'uploadDate' => date('c', strtotime($it['published_at'])),
+                'duration' => 'PT' . (int)$it['duration'] . 'S',
+                'contentUrl' => $host . '/video/' . $it['slug'],
+            ],
+        ];
+    }
+  ?>
+  <script type="application/ld+json" data-testid="itemlist-schema"><?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'ItemList',
+    'name' => $l['title'],
+    'itemListOrder' => 'https://schema.org/ItemListOrderDescending',
+    'numberOfItems' => count($listItems),
+    'itemListElement' => $listItems,
+  ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <ol class="top10-list" data-testid="landing-top10">
-    <?php foreach (array_slice($items, 0, 10) as $rank => $video): $rank++; ?>
+    <?php foreach ($top as $rank => $video): $rank++; ?>
       <li class="top10-item" data-rank="<?= $rank ?>">
         <span class="top10-rank">#<?= $rank ?></span>
         <div class="top10-body"><?php include __DIR__.'/../partials/card.php'; ?></div>

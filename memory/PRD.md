@@ -84,3 +84,7 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
   - top10 — ranked list 1-10 with gold/silver/bronze rank badges
 - Radio-card template picker in the landing form.
 - `PingService` submits every newly ACTIVE landing to IndexNow (Bing+Yandex+Seznam), Google and Bing sitemap ping (best-effort). IndexNow key served at `/{key}.txt`, key auto-generated at `storage/indexnow.key`. Ping results logged to `pings` table.
+
+## Iteration 9 (2026-02) — Rich Snippets + Bulk Publish
+- Top-10 landings now emit a full `ItemList` JSON-LD (10 ListItem entries, each embedding a VideoObject with contentUrl/thumbnail/duration/uploadDate) — Google can surface the numbered list directly in the SERP.
+- Landings table gets multi-select checkboxes (`bulk-cb-{id}`, `bulk-all`) with a sticky bulk toolbar (`bulk-toolbar`) exposing **Enable + Ping**, **Re-ping**, **Delete**. Enable also clears the `suggested` flag and pings IndexNow+Google+Bing for every selected row. All actions confirm and show a flash with counts.

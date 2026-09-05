@@ -112,6 +112,56 @@ class AdminController {
         exit;
     }
 
+    public function bulkLanding(): void {
+        $this->auth();
+        $action = $_POST['action'] ?? '';
+        $ids = array_map('intval', (array)($_POST['ids'] ?? []));
+        $ids = array_values(array_filter($ids));
+        if (!$ids) { header('Location: /admin?msg=' . urlencode('No landings selected')); exit; }
+        $ph = implode(',', array_fill(0, count($ids), '?'));
+        $db = \App\Core\App::$db;
+        $done = 0; $pings = 0;
+        switch ($action) {
+            case 'enable':
+                $st = $db->prepare("UPDATE landings SET active=1, suggested=0 WHERE id IN ($ph)");
+                $st->execute($ids);
+                $done = $st->rowCount();
+                // Ping every now-active landing
+                $rs = $db->prepare("SELECT slug FROM landings WHERE id IN ($ph)");
+                $rs->execute($ids);
+                $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $scheme = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'https';
+                foreach ($rs->fetchAll() as $r) {
+                    try { \App\Support\PingService::submit($scheme.'://'.$host.'/l/'.rawurlencode($r['slug'])); $pings++; }
+                    catch (\Throwable $e) {}
+                }
+                $msg = "Enabled {$done} landing(s), pinged {$pings} URL(s)";
+                break;
+            case 'delete':
+                $st = $db->prepare("DELETE FROM landings WHERE id IN ($ph)");
+                $st->execute($ids);
+                $done = $st->rowCount();
+                $msg = "Deleted {$done} landing(s)";
+                break;
+            case 'reping':
+                $rs = $db->prepare("SELECT slug FROM landings WHERE id IN ($ph) AND active=1");
+                $rs->execute($ids);
+                $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'] ?? 'localhost';
+                $scheme = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? 'https';
+                foreach ($rs->fetchAll() as $r) {
+                    try { \App\Support\PingService::submit($scheme.'://'.$host.'/l/'.rawurlencode($r['slug'])); $pings++; }
+                    catch (\Throwable $e) {}
+                }
+                $msg = "Re-pinged {$pings} active landing(s)";
+                break;
+            default:
+                $msg = 'Unknown bulk action';
+        }
+        \App\Core\Cache::forget();
+        header('Location: /admin?msg=' . urlencode($msg));
+        exit;
+    }
+
     public function saveSourceConfig(): void {
         $this->auth();
         $slug = $_POST['slug'] ?? '';

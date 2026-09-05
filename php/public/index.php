@@ -44,6 +44,7 @@ $router->get('/admin/landings/new', fn() => (new AdminController())->landingForm
 $router->get('/admin/landings/edit', fn() => (new AdminController())->landingForm());
 $router->post('/admin/landings/save', fn() => (new AdminController())->saveLanding());
 $router->post('/admin/landings/delete', fn() => (new AdminController())->deleteLanding());
+$router->post('/admin/landings/bulk', fn() => (new AdminController())->bulkLanding());
 $router->post('/admin/cache/clear', fn() => (new AdminController())->clearCache());
 
 // Cron webhook (called by the Emergent platform scheduler)

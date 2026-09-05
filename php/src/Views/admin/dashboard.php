@@ -138,9 +138,24 @@
 
 <h2 style="margin-top:32px">Landing pages</h2>
 <p class="muted">Curated collection pages that turn search intent into visits. Click <strong>+ Landing</strong> next to a zero-result keyword above to spin one up in one click. Draft suggestions from the nightly job appear here with the <span class="pill off">DRAFT</span> badge.</p>
-<div style="margin-bottom:12px"><a href="/admin/landings/new" class="btn-primary" data-testid="new-landing">+ Create landing page</a></div>
+<div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <a href="/admin/landings/new" class="btn-primary" data-testid="new-landing">+ Create landing page</a>
+  <?php if ($landings): ?>
+    <span style="flex:1"></span>
+    <div style="display:flex;gap:6px;align-items:center" data-testid="bulk-toolbar">
+      <span class="muted" style="font-size:.8rem"><span id="bulk-count" data-testid="bulk-count">0</span> selected</span>
+      <button form="landings-bulk-form" name="action" value="enable" class="btn-primary" style="padding:6px 12px;font-size:.82rem" onclick="return confirmBulk('enable and ping')" data-testid="bulk-enable">Enable + Ping</button>
+      <button form="landings-bulk-form" name="action" value="reping" class="btn-ghost" style="padding:6px 12px;font-size:.82rem" onclick="return confirmBulk('re-ping search engines for')" data-testid="bulk-reping">Re-ping</button>
+      <button form="landings-bulk-form" name="action" value="delete" class="btn-ghost" style="padding:6px 12px;font-size:.82rem;color:#ff8887;border-color:rgba(225,6,0,.4)" onclick="return confirmBulk('DELETE')" data-testid="bulk-delete">Delete</button>
+    </div>
+  <?php endif; ?>
+</div>
+<form id="landings-bulk-form" method="post" action="/admin/landings/bulk"></form>
 <table class="data" data-testid="landings-table">
-  <thead><tr><th>Slug</th><th>Title</th><th>Keyword</th><th>Tpl</th><th>Cat/Tag</th><th>Views</th><th>Status</th><th></th></tr></thead>
+  <thead><tr>
+    <th style="width:36px"><?php if ($landings): ?><input type="checkbox" id="bulk-all" data-testid="bulk-all"><?php endif; ?></th>
+    <th>Slug</th><th>Title</th><th>Keyword</th><th>Tpl</th><th>Cat/Tag</th><th>Views</th><th>Status</th><th></th>
+  </tr></thead>
   <tbody>
   <?php foreach ($landings as $l):
     $cats = json_decode($l['categories_json'] ?: '[]', true) ?: [];
@@ -148,6 +163,7 @@
     $isDraft = !$l['active'] && !empty($l['suggested']);
   ?>
     <tr <?= $isDraft ? 'style="background:rgba(255,176,32,.06)"' : '' ?>>
+      <td><input type="checkbox" form="landings-bulk-form" name="ids[]" value="<?= (int)$l['id'] ?>" class="bulk-cb" data-testid="bulk-cb-<?= (int)$l['id'] ?>"></td>
       <td><a href="/l/<?= View::e($l['slug']) ?>" target="_blank"><code>/l/<?= View::e($l['slug']) ?></code></a></td>
       <td><?= View::e($l['title']) ?><?= $isDraft ? ' <span class="pill off" style="background:rgba(255,176,32,.14);color:#ffd076;margin-left:6px">DRAFT SUGGEST</span>' : '' ?></td>
       <td><?= View::e($l['keyword'] ?: '—') ?></td>
@@ -161,6 +177,23 @@
       </td>
     </tr>
   <?php endforeach; ?>
-  <?php if (!$landings): ?><tr><td colspan="8" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
+  <?php if (!$landings): ?><tr><td colspan="9" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
   </tbody>
 </table>
+<?php if ($landings): ?>
+<script>
+(function(){
+  const all = document.getElementById('bulk-all');
+  const cbs = document.querySelectorAll('.bulk-cb');
+  const count = document.getElementById('bulk-count');
+  function refresh(){ count.textContent = String(document.querySelectorAll('.bulk-cb:checked').length); }
+  if (all) all.addEventListener('change', function(){ cbs.forEach(c=>c.checked=all.checked); refresh(); });
+  cbs.forEach(c => c.addEventListener('change', refresh));
+  window.confirmBulk = function(verb){
+    const n = document.querySelectorAll('.bulk-cb:checked').length;
+    if (!n) { alert('Select at least one landing.'); return false; }
+    return confirm(`${verb} ${n} landing(s)?`);
+  };
+})();
+</script>
+<?php endif; ?>
