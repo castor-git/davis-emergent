@@ -31,7 +31,9 @@ class AdminController {
         foreach ($sources as &$s) { $s['config_arr'] = json_decode($s['config'] ?: '{}', true) ?: []; }
         $ads = \App\Models\Ad::all();
         $positions = \App\Models\Ad::positions();
-        View::render('admin/dashboard', ['title'=>'Admin','counts'=>$counts,'sources'=>$sources,'ads'=>$ads,'positions'=>$positions], 'admin');
+        $top_searches = \App\Models\SearchQuery::top(20);
+        $search_stats = \App\Models\SearchQuery::stats();
+        View::render('admin/dashboard', ['title'=>'Admin','counts'=>$counts,'sources'=>$sources,'ads'=>$ads,'positions'=>$positions,'top_searches'=>$top_searches,'search_stats'=>$search_stats], 'admin');
     }
 
     public function saveSourceConfig(): void {

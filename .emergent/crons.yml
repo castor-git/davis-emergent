@@ -1,7 +1,7 @@
 crons:
-  - name: nightly-import
-    description: "Runs enabled source adapters (Upornia/XVideos/XNXX) at 03:00 UTC to import fresh videos"
-    cron: "0 3 * * *"
+  - name: live-import
+    description: "Runs enabled source adapters (Upornia/XVideos/XNXX) every 6 hours so returning visitors always see fresh videos"
+    cron: "0 */6 * * *"
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
     endpoint: "{{BASE_URL}}/api/cron/nightly-import"
     method: POST

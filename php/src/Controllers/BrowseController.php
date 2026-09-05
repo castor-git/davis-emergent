@@ -66,6 +66,9 @@ class BrowseController {
         $filters = $_GET;
         $page = max(1, (int)($_GET['page'] ?? 1));
         $data = Video::paginate($filters, $page, (int)App::config('per_page'));
+        if ($q !== '' && $page === 1) {
+            \App\Models\SearchQuery::log($q, (int)$data['total']);
+        }
         $data['filters'] = $filters;
         $data['categories'] = Taxonomy::popularCategories(30);
         $data['tags'] = Taxonomy::popularTags(40);

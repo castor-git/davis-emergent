@@ -85,5 +85,15 @@ class Schema {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_pos_active (position, active)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->exec("CREATE TABLE IF NOT EXISTS search_queries (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            q VARCHAR(191) NOT NULL,
+            count INT NOT NULL DEFAULT 1,
+            results_last INT NOT NULL DEFAULT 0,
+            last_seen DATETIME NOT NULL,
+            UNIQUE KEY uniq_q (q),
+            INDEX idx_count (count)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 }

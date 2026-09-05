@@ -52,3 +52,8 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - Nightly cron at 03:00 UTC via `/app/.emergent/crons.yml` → `POST /api/cron/nightly-import`, Bearer-protected with `WEBHOOK_CRON_SECRET` (in backend/.env and forwarded to php-app via supervisor). Endpoint acks 2xx immediately then imports enabled non-demo sources and clears cache.
 - Advertising system: `ads` table + Ad model, 4 slot positions (home_top, home_middle, video_pre, video_sidebar), banner (image+link) + snippet (AdSense/ExoClick HTML/JS) kinds, weight, active flag, optional start/end windows. Admin CRUD (`/admin/ads/save`, `/admin/ads/delete`) with confirm.
 - Testing iteration 3: 14/14 backend + UI smoke PASS.
+
+## Iteration 4 (2026-02) — Live Categories + Search Insights
+- Cron cadence changed from nightly `0 3 * * *` to `0 */6 * * *` (every 6 hours). Same endpoint /api/cron/nightly-import. cron name updated to `live-import`.
+- `search_queries` table (q UNIQUE, count, results_last, last_seen). BrowseController::search logs on page-1 submits.
+- Admin adds Search insights section: unique keywords / total searches / zero-result gaps stats + Top 20 table with click-to-open. Zero-result rows are highlighted with a red `GAP` pill to guide landing-page creation.

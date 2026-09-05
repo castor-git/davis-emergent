@@ -108,4 +108,28 @@
 
 <h2 style="margin-top:32px">Diagnostics</h2>
 <form method="post" action="/admin/cache/clear" style="display:inline"><button class="btn-primary" data-testid="clear-cache">Clear cache</button></form>
-<p class="muted" style="margin-top:14px;font-size:.85rem">Nightly import cron: <code>0 3 * * *</code> (UTC) via <code>.emergent/crons.yml</code> → <code>POST /api/cron/nightly-import</code></p>
+<p class="muted" style="margin-top:14px;font-size:.85rem">Live-import cron: <code>0 */6 * * *</code> (UTC) via <code>.emergent/crons.yml</code> → <code>POST /api/cron/nightly-import</code></p>
+
+<h2 style="margin-top:32px">Search insights</h2>
+<div class="stat-grid" data-testid="search-stats">
+  <div class="stat"><div class="k">Unique keywords</div><div class="v"><?= (int)$search_stats['total_unique'] ?></div></div>
+  <div class="stat"><div class="k">Total searches</div><div class="v"><?= (int)$search_stats['total_searches'] ?></div></div>
+  <div class="stat"><div class="k">Zero-result queries</div><div class="v"><?= (int)$search_stats['zero_results'] ?></div></div>
+</div>
+<p class="muted">Top 20 keywords typed into the site search. Use them to spot content gaps and build landing pages that convert.</p>
+<table class="data" data-testid="top-searches">
+  <thead><tr><th style="width:60px">#</th><th>Keyword</th><th>Searches</th><th>Last results</th><th>Last seen</th><th></th></tr></thead>
+  <tbody>
+  <?php foreach ($top_searches as $i => $s): ?>
+    <tr <?= (int)$s['results_last'] === 0 ? 'style="background:rgba(225,6,0,.06)"' : '' ?>>
+      <td><?= $i + 1 ?></td>
+      <td><code data-testid="kw-<?= $i ?>"><?= View::e($s['q']) ?></code></td>
+      <td><strong><?= (int)$s['count'] ?></strong></td>
+      <td><?= (int)$s['results_last'] ?><?= (int)$s['results_last']===0 ? ' <span class="pill off" style="margin-left:6px">GAP</span>' : '' ?></td>
+      <td class="muted"><?= View::e($s['last_seen']) ?></td>
+      <td style="text-align:right"><a class="btn-ghost" style="padding:4px 10px;font-size:.78rem" href="/search?q=<?= urlencode($s['q']) ?>" target="_blank" data-testid="kw-open-<?= $i ?>">Open</a></td>
+    </tr>
+  <?php endforeach; ?>
+  <?php if (!$top_searches): ?><tr><td colspan="6" class="muted" style="text-align:center;padding:20px">No searches yet — data will appear here as visitors use the search bar.</td></tr><?php endif; ?>
+  </tbody>
+</table>
