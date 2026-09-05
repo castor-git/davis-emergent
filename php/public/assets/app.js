@@ -53,4 +53,16 @@
     if (getComputedStyle(nav).display === 'none'){ nav.style.display = 'flex'; nav.style.flexDirection='column'; nav.style.position='absolute'; nav.style.top='60px'; nav.style.right='16px'; nav.style.background='#131519'; nav.style.padding='10px'; nav.style.borderRadius='10px'; nav.style.border='1px solid #22262d'; }
     else nav.style.display = 'none';
   });
+  // Category preferences (pin / hide) — POST to /api/prefs/{pin|hide}
+  document.querySelectorAll('.chip-wrap .chip-act').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      const wrap = btn.closest('.chip-wrap'); if (!wrap) return;
+      const slug = wrap.getAttribute('data-slug'); const act = btn.getAttribute('data-act');
+      const fd = new FormData(); fd.append('slug', slug);
+      fetch('/api/prefs/' + act, {method:'POST', body: fd, credentials:'same-origin'})
+        .then(r=>r.json()).then(function(){ location.reload(); })
+        .catch(function(){});
+    });
+  });
 })();

@@ -21,10 +21,17 @@
 <section class="section">
   <div class="section-head"><h2>Popular categories</h2><a href="/categories">All categories →</a></div>
   <div class="chips" data-testid="cat-chips">
-    <?php foreach ($categories as $c): ?>
-      <a class="chip" href="/category/<?= View::e($c['slug']) ?>" data-testid="chip-cat-<?= View::e($c['slug']) ?>"><?= View::e($c['name']) ?> <span class="count"><?= (int)$c['video_count'] ?></span></a>
+    <?php foreach ($categories as $c): $isPin = in_array($c['slug'], $pins ?? [], true); ?>
+      <span class="chip-wrap<?= $isPin?' pinned':'' ?>" data-slug="<?= View::e($c['slug']) ?>">
+        <a class="chip" href="/category/<?= View::e($c['slug']) ?>" data-testid="chip-cat-<?= View::e($c['slug']) ?>"><?php if($isPin):?>📌 <?php endif;?><?= View::e($c['name']) ?> <span class="count"><?= (int)$c['video_count'] ?></span></a>
+        <button class="chip-act pin" title="<?= $isPin?'Unpin':'Pin' ?>" data-act="pin" data-testid="pin-<?= View::e($c['slug']) ?>"><?= $isPin?'★':'☆' ?></button>
+        <button class="chip-act hide" title="Hide category" data-act="hide" data-testid="hide-<?= View::e($c['slug']) ?>">✕</button>
+      </span>
     <?php endforeach; ?>
   </div>
+  <?php if (!empty($hides)): ?>
+  <p class="muted" style="margin-top:10px;font-size:.78rem" data-testid="hidden-note">Hidden: <?= count($hides) ?> categor<?= count($hides)===1?'y':'ies' ?> — <a href="#" onclick="document.cookie='dv_hides=;path=/;max-age=0';location.reload();return false" data-testid="unhide-all">clear</a></p>
+  <?php endif; ?>
 </section>
 
 <section class="section">

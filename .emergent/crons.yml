@@ -13,3 +13,10 @@ crons:
     endpoint: "{{BASE_URL}}/api/cron/daily-suggest"
     method: POST
     enabled: true
+  - name: weekly-digest
+    description: "Every Monday 09:00 UTC — emails the owner a summary of new drafts, top searches and best landings"
+    cron: "0 9 * * 1"
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    endpoint: "{{BASE_URL}}/api/cron/weekly-digest"
+    method: POST
+    enabled: true

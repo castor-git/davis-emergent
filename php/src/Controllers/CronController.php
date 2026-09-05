@@ -45,4 +45,29 @@ class CronController {
         try { \App\Support\LandingSuggester::run(3); }
         catch (\Throwable $e) { error_log('landing suggester: ' . $e->getMessage()); }
     }
+
+    public function weeklyDigest(): void {
+        $secret = getenv('WEBHOOK_CRON_SECRET') ?: '';
+        $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        $token = (str_starts_with($auth, 'Bearer ')) ? substr($auth, 7) : '';
+        if (!$secret || !hash_equals($secret, $token)) {
+            View::json(['ok'=>false,'error'=>'unauthorized'], 401);
+            return;
+        }
+        View::json(['ok'=>true,'event'=>'weekly-digest-accepted']);
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        else { ignore_user_abort(true); flush(); }
+
+        try {
+            $to = getenv('DIGEST_TO_EMAIL') ?: '';
+            if (!$to) { error_log('digest: DIGEST_TO_EMAIL missing'); return; }
+            $d = \App\Support\DigestBuilder::build();
+            $r = \App\Support\EmailService::send($to, $d['subject'], $d['html']);
+            \App\Core\App::$db->exec("CREATE TABLE IF NOT EXISTS digests (id INT AUTO_INCREMENT PRIMARY KEY, sent_to VARCHAR(191), status INT, note TEXT, subject VARCHAR(255), summary TEXT, sent_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+            $st = \App\Core\App::$db->prepare("INSERT INTO digests (sent_to, status, note, subject, summary) VALUES (?, ?, ?, ?, ?)");
+            $st->execute([$to, (int)($r['status'] ?? 0), (string)($r['error'] ?? ($r['reason'] ?? '')), $d['subject'], $d['text_summary']]);
+        } catch (\Throwable $e) {
+            error_log('weekly digest failure: ' . $e->getMessage());
+        }
+    }
 }

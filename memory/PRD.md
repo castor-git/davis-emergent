@@ -112,3 +112,12 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - **Persistence**: `bootstrap.sh` and supervisor conf now use `--datadir=/app/mysql`. Existing data copied from `/var/lib/mysql` → `/app/mysql` (preserved on migration). Landings/ads/A-B stats now survive pod restarts.
 - **Personalized row**: `HomeController::index` reads `Personalization::topCategory()`, resolves it via `Taxonomy::categoryBySlug`, and — if the category has ≥ 3 videos — renders a new "Because you like {Category}" section above the trending widget with the top 12 videos in that category. `data-testid=taste-row` / `data-testid=taste-grid`.
 - Section header keeps the amber `FOR YOU` badge and links to `/category/{slug}` with a "See all N →" CTA.
+
+## Iteration 14 (2026-02) — Explicit Prefs + Weekly Digest
+- **Explicit Preferences**: cookies `dv_pins` and `dv_hides` (comma-separated, 180 days) with `Preferences` support class. Public JSON endpoints `POST /api/prefs/{pin|hide}` toggle a slug and return updated arrays. Home cat-chips get inline `☆/★` and `✕` buttons; pinned chips show 📌 + amber background and are reordered to the front; hidden chips are filtered out with a "Hidden: N" clear link. The first pin overrides the implicit `Personalization::topCategory()` for both trending boost and the "Because you like" row.
+- **Weekly Digest** (Resend via Emergent, playbook applied):
+  - `App\Support\EmailService` — POSTs to `https://integrations.emergentagent.com/api/v1/email/send` with `X-Email-Key` header, `from_name=DAVISPORN`; runs G2/G3 structural gate (no form/input, no non-https/shortener/IP/punycode links, no credential-ask phrases). Returns 0/skipped if `EMERGENT_EMAIL_KEY` is unset.
+  - `App\Support\DigestBuilder` — server-side template producing a self-contained HTML email with 4 KPI tiles, new drafts, top searches, best-performing landings and a red "Open admin dashboard" CTA.
+  - Cron `weekly-digest` at `0 9 * * 1` UTC → `POST /api/cron/weekly-digest` (Bearer-protected). Ack immediately then send + log to `digests` table.
+  - Admin preview at `/admin/digest` — shows recipient, key status, full preview and last 5 send attempts + "Send now" button. Recipient in env `DIGEST_TO_EMAIL=superpanel87@gmail.com`.
+  - **Note**: `EMERGENT_EMAIL_KEY` currently blank in this env (not auto-provisioned). Provisioned key can be added to `/app/backend/.env` and `davisporn.conf` supervisor `environment=` and it will start sending on next Monday.

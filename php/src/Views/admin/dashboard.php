@@ -108,7 +108,8 @@
 
 <h2 style="margin-top:32px">Diagnostics</h2>
 <form method="post" action="/admin/cache/clear" style="display:inline"><button class="btn-primary" data-testid="clear-cache">Clear cache</button></form>
-<p class="muted" style="margin-top:14px;font-size:.85rem">Live-import cron: <code>0 */6 * * *</code> (UTC) via <code>.emergent/crons.yml</code> → <code>POST /api/cron/nightly-import</code></p>
+<a href="/admin/digest" class="btn-ghost" data-testid="nav-digest" style="margin-left:8px">Weekly digest →</a>
+<p class="muted" style="margin-top:14px;font-size:.85rem">Live-import cron: <code>0 */6 * * *</code> · Landing-suggest: <code>30 3 * * *</code> · Digest: <code>0 9 * * 1</code> UTC</p>
 
 <h2 style="margin-top:32px">Search insights</h2>
 <div class="stat-grid" data-testid="search-stats">

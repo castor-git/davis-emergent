@@ -231,4 +231,26 @@ class AdminController {
         Cache::forget();
         header('Location: /admin?msg=' . urlencode('Cache cleared')); exit;
     }
+
+    public function digest(): void {
+        $this->auth();
+        $preview = \App\Support\DigestBuilder::build();
+        $to = getenv('DIGEST_TO_EMAIL') ?: '(not configured — set DIGEST_TO_EMAIL)';
+        $keyOk = (bool)getenv('EMERGENT_EMAIL_KEY');
+
+        // Last 5 send attempts
+        $db = App::$db;
+        $db->exec("CREATE TABLE IF NOT EXISTS digests (id INT AUTO_INCREMENT PRIMARY KEY, sent_to VARCHAR(191), status INT, note TEXT, subject VARCHAR(255), summary TEXT, sent_at DATETIME DEFAULT CURRENT_TIMESTAMP)");
+        $last = $db->query("SELECT * FROM digests ORDER BY id DESC LIMIT 5")->fetchAll();
+
+        if (($_GET['action'] ?? '') === 'send-now') {
+            $r = \App\Support\EmailService::send(getenv('DIGEST_TO_EMAIL') ?: 'delivered@resend.dev', $preview['subject'], $preview['html']);
+            $st = $db->prepare("INSERT INTO digests (sent_to, status, note, subject, summary) VALUES (?,?,?,?,?)");
+            $st->execute([$to, (int)($r['status'] ?? 0), (string)($r['error'] ?? ($r['reason'] ?? '')), $preview['subject'], $preview['text_summary']]);
+            header('Location: /admin/digest?msg=' . urlencode('Send attempt: status ' . ($r['status'] ?? '—') . ' ' . ($r['reason'] ?? $r['error'] ?? 'ok')));
+            exit;
+        }
+
+        View::render('admin/digest', ['title'=>'Weekly digest', 'to'=>$to, 'keyOk'=>$keyOk, 'preview'=>$preview, 'last'=>$last], 'admin');
+    }
 }
