@@ -20,6 +20,14 @@ class HomeController {
         });
         $data['trending_landings'] = \App\Models\Landing::trending(6, $topCat);
         $data['top_category'] = $topCat;
+        $data['taste_row'] = null;
+        if ($topCat) {
+            $cat = Taxonomy::categoryBySlug($topCat);
+            if ($cat && (int)$cat['video_count'] >= 3) {
+                $items = Video::paginate(['category'=>$topCat,'sort'=>'popular'], 1, 12)['items'];
+                if (count($items) >= 3) $data['taste_row'] = ['category'=>$cat, 'items'=>$items];
+            }
+        }
         View::render('pages/home', $data + ['title' => App::config('app_name') . ' — ' . App::config('tagline')]);
     }
 }

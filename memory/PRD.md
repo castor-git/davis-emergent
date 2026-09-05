@@ -107,3 +107,8 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - `Landing::trending()` accepts an optional `boostCategory` and computes a per-row `boost` column via `JSON_CONTAINS(l.categories_json, JSON_QUOTE(?))`. Order: boost DESC → CTR DESC → views DESC.
 - Home template shows a `TUNED TO YOUR TASTE` badge when personalization is active and marks each matching tile with a gold `★ FOR YOU` badge plus a subtle amber outer glow.
 - Cache: kept the shared `home:v1` for the non-personalized sections and computes `trending_landings` outside the cache on every request (cheap SQL, negligible cost).
+
+## Iteration 13 (2026-02) — Personalized Home Row + Persistent DB
+- **Persistence**: `bootstrap.sh` and supervisor conf now use `--datadir=/app/mysql`. Existing data copied from `/var/lib/mysql` → `/app/mysql` (preserved on migration). Landings/ads/A-B stats now survive pod restarts.
+- **Personalized row**: `HomeController::index` reads `Personalization::topCategory()`, resolves it via `Taxonomy::categoryBySlug`, and — if the category has ≥ 3 videos — renders a new "Because you like {Category}" section above the trending widget with the top 12 videos in that category. `data-testid=taste-row` / `data-testid=taste-grid`.
+- Section header keeps the amber `FOR YOU` badge and links to `/category/{slug}` with a "See all N →" CTA.

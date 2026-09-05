@@ -34,6 +34,18 @@
   </div>
 </section>
 
+<?php if (!empty($taste_row)): ?>
+<section class="section" data-testid="taste-row">
+  <div class="section-head">
+    <h2>Because you like <span style="color:var(--gold)"><?= View::e($taste_row['category']['name']) ?></span> <span class="badge" style="margin-left:8px;font-size:.65rem;background:rgba(255,176,32,.16);color:#ffd076;border-color:rgba(255,176,32,.4);vertical-align:middle">FOR YOU</span></h2>
+    <a href="/category/<?= View::e($taste_row['category']['slug']) ?>">See all <?= (int)$taste_row['category']['video_count'] ?> →</a>
+  </div>
+  <div class="grid" data-testid="taste-grid">
+    <?php foreach ($taste_row['items'] as $video) include __DIR__.'/../partials/card.php'; ?>
+  </div>
+</section>
+<?php endif; ?>
+
 <?php if (!empty($trending_landings)): ?>
 <section class="section">
   <div class="section-head"><h2>Trending collections<?php if (!empty($top_category)): ?> <span class="badge hot" style="margin-left:8px;font-size:.65rem;vertical-align:middle" data-testid="taste-badge">TUNED TO YOUR TASTE</span><?php endif; ?></h2><a href="/admin" class="muted" style="font-size:.75rem">manage →</a></div>
