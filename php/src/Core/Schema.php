@@ -95,5 +95,18 @@ class Schema {
             UNIQUE KEY uniq_q (q),
             INDEX idx_count (count)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->exec("CREATE TABLE IF NOT EXISTS landings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            slug VARCHAR(96) NOT NULL UNIQUE,
+            title VARCHAR(191) NOT NULL,
+            keyword VARCHAR(191) NULL,
+            intro TEXT NULL,
+            categories_json TEXT NULL,
+            tags_json TEXT NULL,
+            active TINYINT(1) NOT NULL DEFAULT 1,
+            views INT NOT NULL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 }

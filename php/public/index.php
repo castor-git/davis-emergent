@@ -26,6 +26,7 @@ $router->get('/tag/{slug}', fn($p) => (new BrowseController())->tag($p));
 
 $router->get('/categories', fn() => (new SeoController())->categoriesIndex());
 $router->get('/tags', fn() => (new SeoController())->tagsIndex());
+$router->get('/l/{slug}', fn($p) => (new \App\Controllers\LandingController())->show($p));
 $router->get('/robots.txt', fn() => (new SeoController())->robots());
 $router->get('/sitemap.xml', fn() => (new SeoController())->sitemap());
 $router->get('/terms', fn() => (new SeoController())->staticPage('terms'));
@@ -39,6 +40,10 @@ $router->post('/admin/source/import', fn() => (new AdminController())->importSou
 $router->post('/admin/source/config', fn() => (new AdminController())->saveSourceConfig());
 $router->post('/admin/ads/save', fn() => (new AdminController())->saveAd());
 $router->post('/admin/ads/delete', fn() => (new AdminController())->deleteAd());
+$router->get('/admin/landings/new', fn() => (new AdminController())->landingForm());
+$router->get('/admin/landings/edit', fn() => (new AdminController())->landingForm());
+$router->post('/admin/landings/save', fn() => (new AdminController())->saveLanding());
+$router->post('/admin/landings/delete', fn() => (new AdminController())->deleteLanding());
 $router->post('/admin/cache/clear', fn() => (new AdminController())->clearCache());
 
 // Cron webhook (called by the Emergent platform scheduler)

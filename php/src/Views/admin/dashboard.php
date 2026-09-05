@@ -127,9 +127,38 @@
       <td><strong><?= (int)$s['count'] ?></strong></td>
       <td><?= (int)$s['results_last'] ?><?= (int)$s['results_last']===0 ? ' <span class="pill off" style="margin-left:6px">GAP</span>' : '' ?></td>
       <td class="muted"><?= View::e($s['last_seen']) ?></td>
-      <td style="text-align:right"><a class="btn-ghost" style="padding:4px 10px;font-size:.78rem" href="/search?q=<?= urlencode($s['q']) ?>" target="_blank" data-testid="kw-open-<?= $i ?>">Open</a></td>
+      <td style="text-align:right"><a class="btn-ghost" style="padding:4px 10px;font-size:.78rem" href="/search?q=<?= urlencode($s['q']) ?>" target="_blank" data-testid="kw-open-<?= $i ?>">Open</a>
+        <a class="btn-primary" style="padding:4px 10px;font-size:.78rem;margin-left:4px" href="/admin/landings/new?keyword=<?= urlencode($s['q']) ?>" data-testid="kw-landing-<?= $i ?>">+ Landing</a>
+      </td>
     </tr>
   <?php endforeach; ?>
   <?php if (!$top_searches): ?><tr><td colspan="6" class="muted" style="text-align:center;padding:20px">No searches yet — data will appear here as visitors use the search bar.</td></tr><?php endif; ?>
+  </tbody>
+</table>
+
+<h2 style="margin-top:32px">Landing pages</h2>
+<p class="muted">Curated collection pages that turn search intent into visits. Click <strong>+ Landing</strong> next to a zero-result keyword above to spin one up in one click.</p>
+<div style="margin-bottom:12px"><a href="/admin/landings/new" class="btn-primary" data-testid="new-landing">+ Create landing page</a></div>
+<table class="data" data-testid="landings-table">
+  <thead><tr><th>Slug</th><th>Title</th><th>Keyword</th><th>Categories/Tags</th><th>Views</th><th>Active</th><th></th></tr></thead>
+  <tbody>
+  <?php foreach ($landings as $l):
+    $cats = json_decode($l['categories_json'] ?: '[]', true) ?: [];
+    $tags = json_decode($l['tags_json'] ?: '[]', true) ?: [];
+  ?>
+    <tr>
+      <td><a href="/l/<?= View::e($l['slug']) ?>" target="_blank"><code>/l/<?= View::e($l['slug']) ?></code></a></td>
+      <td><?= View::e($l['title']) ?></td>
+      <td><?= View::e($l['keyword'] ?: '—') ?></td>
+      <td class="muted" style="font-size:.82rem"><?= count($cats) ?> cat · <?= count($tags) ?> tag</td>
+      <td><?= (int)$l['views'] ?></td>
+      <td><span class="pill <?= $l['active']?'on':'off' ?>"><?= $l['active']?'ON':'OFF' ?></span></td>
+      <td style="text-align:right;white-space:nowrap">
+        <a class="btn-ghost" style="padding:4px 10px;font-size:.78rem" href="/admin/landings/edit?id=<?= (int)$l['id'] ?>" data-testid="landing-edit-<?= (int)$l['id'] ?>">Edit</a>
+        <form method="post" action="/admin/landings/delete" style="display:inline" onsubmit="return confirm('Delete landing?')"><input type="hidden" name="id" value="<?= (int)$l['id'] ?>"><button class="btn-ghost" style="padding:4px 10px;font-size:.78rem" data-testid="landing-delete-<?= (int)$l['id'] ?>">Delete</button></form>
+      </td>
+    </tr>
+  <?php endforeach; ?>
+  <?php if (!$landings): ?><tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
   </tbody>
 </table>

@@ -57,3 +57,11 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - Cron cadence changed from nightly `0 3 * * *` to `0 */6 * * *` (every 6 hours). Same endpoint /api/cron/nightly-import. cron name updated to `live-import`.
 - `search_queries` table (q UNIQUE, count, results_last, last_seen). BrowseController::search logs on page-1 submits.
 - Admin adds Search insights section: unique keywords / total searches / zero-result gaps stats + Top 20 table with click-to-open. Zero-result rows are highlighted with a red `GAP` pill to guide landing-page creation.
+
+## Iteration 5 (2026-02) — Landing Page Builder
+- `landings` table (slug, title, keyword, intro, categories_json, tags_json, active, views).
+- Public route `/l/{slug}` renders curated collection: hero (CURATED COLLECTION + Search intent badges + total count), chips for included categories/tags, grid + pagination, CollectionPage JSON-LD.
+- Admin CRUD at /admin/landings/{new,edit,save,delete}. Form has chip-style multi-select for categories & tags plus keyword, intro, slug and active toggle.
+- One-click flow: in the Top-20 Search insights table, every keyword row shows a `+ Landing` button that opens the create form pre-filled with keyword, auto-slug, boilerplate intro, and pre-checked matching categories/tags (fuzzy LIKE on category/tag names).
+- Union semantics: a video is included if it matches ANY chosen category OR tag OR title/description LIKE keyword.
+- Iteration 4 tests: 12/12 backend + UI smoke PASS.

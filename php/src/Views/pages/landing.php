@@ -1,0 +1,39 @@
+<?php use App\Core\View; $l = $landing; $cats = json_decode($l['categories_json'] ?: '[]', true) ?: []; $tags = json_decode($l['tags_json'] ?: '[]', true) ?: []; ?>
+<section class="hero" data-testid="landing-hero">
+  <div class="badge-row" style="margin-bottom:12px">
+    <span class="badge hot">CURATED COLLECTION</span>
+    <?php if (!empty($l['keyword'])): ?><span class="badge">Search intent: “<?= View::e($l['keyword']) ?>”</span><?php endif; ?>
+    <span class="badge"><?= number_format((int)$total) ?> videos</span>
+  </div>
+  <h1><?= View::e($l['title']) ?></h1>
+  <?php if (!empty($l['intro'])): ?><p style="max-width:820px;color:#c8cdd6"><?= nl2br(View::e($l['intro'])) ?></p><?php endif; ?>
+  <?php if ($cats || $tags): ?>
+  <div class="chips" style="margin-top:12px">
+    <?php foreach ($cats as $slug): ?><a class="chip" href="/category/<?= View::e($slug) ?>"><?= View::e($slug) ?></a><?php endforeach; ?>
+    <?php foreach ($tags as $slug): ?><a class="chip" href="/tag/<?= View::e($slug) ?>">#<?= View::e($slug) ?></a><?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+</section>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"<?= View::e(str_replace('"','', $l['title'])) ?>","description":"<?= View::e(str_replace('"','', substr($l['intro'] ?? '',0,180))) ?>","url":"<?= View::e('/l/'.$l['slug']) ?>"}
+</script>
+
+<?php if (!empty($items)): ?>
+<div class="grid" data-testid="landing-grid">
+  <?php foreach ($items as $video) include __DIR__.'/../partials/card.php'; ?>
+</div>
+<?php else: ?>
+<div class="doc"><p>This collection is still being populated. Come back soon — imports run every 6 hours.</p></div>
+<?php endif; ?>
+
+<?php if ($pages > 1):
+  $base = '/l/' . $l['slug'] . '?';
+  $start = max(1, $page - 3); $end = min($pages, $page + 3);
+?>
+<nav class="pager">
+  <a class="<?= $page<=1?'disabled':'' ?>" href="<?= $page<=1?'#':$base.'page='.($page-1) ?>">← Prev</a>
+  <?php for ($i=$start; $i<=$end; $i++): ?><a class="<?= $i==$page?'cur':'' ?>" href="<?= $base.'page='.$i ?>"><?= $i ?></a><?php endfor; ?>
+  <a class="<?= $page>=$pages?'disabled':'' ?>" href="<?= $page>=$pages?'#':$base.'page='.($page+1) ?>">Next →</a>
+</nav>
+<?php endif; ?>

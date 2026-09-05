@@ -33,7 +33,64 @@ class AdminController {
         $positions = \App\Models\Ad::positions();
         $top_searches = \App\Models\SearchQuery::top(20);
         $search_stats = \App\Models\SearchQuery::stats();
-        View::render('admin/dashboard', ['title'=>'Admin','counts'=>$counts,'sources'=>$sources,'ads'=>$ads,'positions'=>$positions,'top_searches'=>$top_searches,'search_stats'=>$search_stats], 'admin');
+        $landings = \App\Models\Landing::all();
+        View::render('admin/dashboard', ['title'=>'Admin','counts'=>$counts,'sources'=>$sources,'ads'=>$ads,'positions'=>$positions,'top_searches'=>$top_searches,'search_stats'=>$search_stats,'landings'=>$landings], 'admin');
+    }
+
+    public function landingForm(): void {
+        $this->auth();
+        $id = (int)($_GET['id'] ?? 0);
+        $prefill = ['id'=>0,'slug'=>'','title'=>'','keyword'=>'','intro'=>'','categories'=>[],'tags'=>[],'active'=>1];
+        if ($id) {
+            $l = \App\Models\Landing::find($id);
+            if ($l) $prefill = [
+                'id'=>$id, 'slug'=>$l['slug'], 'title'=>$l['title'], 'keyword'=>$l['keyword'] ?? '',
+                'intro'=>$l['intro'] ?? '', 'active'=>(int)$l['active'],
+                'categories'=>json_decode($l['categories_json'] ?: '[]', true) ?: [],
+                'tags'=>json_decode($l['tags_json'] ?: '[]', true) ?: [],
+            ];
+        } elseif (!empty($_GET['keyword'])) {
+            $kw = trim($_GET['keyword']);
+            $prefill['keyword'] = $kw;
+            $prefill['title'] = ucwords($kw) . ' videos — curated';
+            $prefill['slug'] = \App\Support\SourceManager::slugify($kw);
+            $prefill['intro'] = "Handpicked scenes matching “{$kw}”. Fresh videos are added automatically every 6 hours.";
+            // Suggest categories/tags that fuzzy-match the keyword
+            $like = '%' . $kw . '%';
+            $cs = App::$db->prepare("SELECT slug FROM categories WHERE name LIKE ? OR slug LIKE ? LIMIT 5"); $cs->execute([$like,$like]);
+            $prefill['categories'] = array_column($cs->fetchAll(), 'slug');
+            $ts = App::$db->prepare("SELECT slug FROM tags WHERE name LIKE ? OR slug LIKE ? LIMIT 5"); $ts->execute([$like,$like]);
+            $prefill['tags'] = array_column($ts->fetchAll(), 'slug');
+        }
+        $all_cats = App::$db->query("SELECT slug, name FROM categories ORDER BY name")->fetchAll();
+        $all_tags = App::$db->query("SELECT slug, name FROM tags ORDER BY name")->fetchAll();
+        View::render('admin/landing_form', ['title'=>'Landing page','prefill'=>$prefill,'all_cats'=>$all_cats,'all_tags'=>$all_tags], 'admin');
+    }
+
+    public function saveLanding(): void {
+        $this->auth();
+        $id = (int)($_POST['id'] ?? 0) ?: null;
+        $data = [
+            'slug' => $_POST['slug'] ?? '',
+            'title' => $_POST['title'] ?? '',
+            'keyword' => $_POST['keyword'] ?? '',
+            'intro' => $_POST['intro'] ?? '',
+            'categories' => $_POST['categories'] ?? [],
+            'tags' => $_POST['tags'] ?? [],
+            'active' => isset($_POST['active']) ? 1 : 0,
+        ];
+        $newId = \App\Models\Landing::save($data, $id);
+        \App\Core\Cache::forget();
+        $l = \App\Models\Landing::find($newId);
+        header('Location: /admin?msg=' . urlencode('Landing saved: /l/' . $l['slug']));
+        exit;
+    }
+
+    public function deleteLanding(): void {
+        $this->auth();
+        \App\Models\Landing::delete((int)($_POST['id'] ?? 0));
+        header('Location: /admin?msg=' . urlencode('Landing deleted'));
+        exit;
     }
 
     public function saveSourceConfig(): void {
