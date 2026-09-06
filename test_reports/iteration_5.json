@@ -1,0 +1,47 @@
+{
+  "summary": "Ran 18 pytest cases against the DAVISPORN preview URL covering public site, video detail embeds, admin dashboard/config/import/purge, sitemap/robots, and cron. All 18 backend tests PASS. Frontend smoke via Playwright confirms real CDN thumbnails, populated category chips, xnxx & xvideos embed iframes on /video/{slug}, and the correct 'Source: xnxx_rapidapi' label. However, during the very first test run the saveSourceConfig POST wiped the RAPIDAPI api_key (see RCA) and the subsequent cron import for xnxx_rapidapi now records 'ERROR: RapidAPI key missing'. Main agent must repaste the RapidAPI key.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /admin/source/config", "issue": "Destructive save: any config field omitted from the POST body is force-cleared to empty string in AdminController::saveSourceConfig() via `foreach ($config as $k=>$v) if ($v==='') $merged[$k]=''`. This wiped the persisted xnxx_rapidapi api_key and host when the admin form was posted with only queries+import_limit. XNXX cron/CLI imports now fail with 'ERROR: RapidAPI key missing' until credentials are reentered.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /admin/source/config", "issue": "Flash message is delivered via ?msg= query string on the redirect target (not a session flash) — a plain GET /admin after the redirect will not show the confirmation. Not a functional bug, but the review criteria say 'flash Source config saved' visible after reload; tester followed the 302 to see it."},
+      {"endpoint": "sources.xnxx_rapidapi.config JSON", "issue": "`enabled` inside the JSON blob is `false` while the row's dedicated `enabled` column is `1`. The two flags can diverge; make sure only one is authoritative."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Home / Featured section", "issue": "DB has 12 rows with is_featured=1 and SourceManager::recount() sets 12 featured, but the home Featured grid renders only 8 tiles in the viewport (5 + 3). Review criteria expected 12 tiles.", "selector": "Featured section (no data-testid on the grid)", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Home", "issues": ["Category chip labels look fine; contrast OK on dark theme.", "Featured tiles missing a data-testid attribute making automated tile-count assertions harder — recommend `data-testid=featured-tile-{n}`."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_davisporn_feeds.py",
+    "/app/test_reports/pytest/davisporn_feeds.xml"
+  ],
+  "action_items": [
+    "URGENT: repaste RAPIDAPI_KEY into sources.xnxx_rapidapi.config.api_key (or set RAPIDAPI_KEY env in supervisor php-app block) — tester's first save wiped it because the form was posted without api_key. Command example: `mysql -udav -pdavpass davisporn -e \"UPDATE sources SET config=JSON_SET(config,'$.api_key','<KEY>','$.host','porn-xnxx-api.p.rapidapi.com') WHERE slug='xnxx_rapidapi'\"`.",
+    "Fix saveSourceConfig() so it merges partial updates instead of blanking omitted fields — either drop the `foreach ... if $v==='' $merged[$k]=''` loop or require an explicit 'clear' flag per field.",
+    "Bump Featured grid to 12 tiles (or verify the recount cap of 12 is actually being rendered — check dashboard/home limit clauses).",
+    "Add data-testid attributes to featured tiles, category chip counts, and video stats row to strengthen automated assertions.",
+    "Reconcile sources.enabled column vs config JSON `enabled` — pick one source of truth."
+  ],
+  "critical_code_review_comments": [
+    "AdminController::saveSourceConfig destructive merge is a footgun for any partial API-style save; harmful especially with secrets in the same JSON.",
+    "Router uses form-encoded `slug` for /admin/source/config and /admin/source/import — a REST-style path (`/admin/source/{slug}/import`) would be clearer and match the data-testids already in use (import-xvideos_csv, save-cfg-xnxx_rapidapi).",
+    "Storage of secrets (api_key) in a longtext JSON column is fine but there is no masking on render — the admin form displays the plaintext key in a `type=\"text\"` input. Consider `type=\"password\"` or a masked placeholder."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_davisporn_feeds.py"
+  ],
+  "success_rate": {"backend": "100% (18/18)", "frontend": "90% — only Featured tile count and missing data-testids stand out"},
+  "test_credentials": "admin/admin123 (HTTP Basic); cron bearer 4cbe7eb9011e833001687088c1ecc98523615151403a55e8; MariaDB dav/davpass; RAPIDAPI_KEY was wiped from DB config — must be repasted.",
+  "seed_data_creation": "None. XVideos import was re-triggered once (idempotent, updated 500). XNXX RapidAPI was NOT re-triggered by tests (per quota advisory). Cron endpoint was hit once with the bearer; that fired an async xnxx import which failed fast with 'RapidAPI key missing' — 0 quota consumed.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Once RAPIDAPI_KEY is restored, re-run: `pytest /app/backend/tests/test_davisporn_feeds.py -v`. Then trigger a xnxx import via CLI once: `cd /app/php && php bin/import.php xnxx_rapidapi 30` — expect 'OK — inserted/updated' in /app/php/storage/logs/import.log and sources.xnxx_rapidapi.last_status. Public URL is https://media-nexus-111.preview.emergentagent.com — no localhost. Age gate is client-side (localStorage `davisporn_age_ok`), server renders content regardless. saveSourceConfig currently wipes any omitted field; when POSTing, ALWAYS include feed_url/api_key/host to avoid data loss.",
+  "rca of the issue": "Root cause of api_key loss: In /app/php/src/Controllers/AdminController.php lines 169-181, saveSourceConfig builds a $config array from $_POST for feed_url/api_key/host/queries/import_limit. It then merges with existing config via array_filter(fn=>$v!=='') — good. But immediately after, it re-inserts every empty value with `foreach ($config as $k=>$v) if ($v==='') $merged[$k]=''`, deliberately clearing any field that came through empty. When a partial POST (as issued by the first test run) omits api_key/host, PHP defaults them to '' via `$_POST['api_key'] ?? ''`, and the loop then explicitly overwrites the previously-saved secret to ''. Reproduction: `curl -u admin:admin123 -d slug=xnxx_rapidapi -d queries=x -d import_limit=1 https://host/admin/source/config` → api_key becomes empty. Mitigation: (1) remove the explicit-clear loop; (2) or gate it behind a per-field checkbox (`clear_api_key=1`); (3) or read secrets from env only and never write them into config JSON."
+}

@@ -10,7 +10,8 @@
 </div>
 
 <h2>Sources</h2>
-<p class="muted">Enable a source, save its config (feed URL / API key), then click Import. The scheduler runs enabled sources every night at 03:00 UTC.</p>
+<p class="muted">Enable a source, save its config (feed URL / API key), then click Import. Imports run in the background — the Message column shows RUNNING… and then the result. The scheduler re-runs enabled sources every 6 hours.</p>
+<?php $inp = 'background:#0f1115;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:5px;font-size:.82rem'; ?>
 <table class="data" data-testid="sources-table">
   <thead><tr><th>Slug</th><th>Label</th><th>Status</th><th>Config</th><th>Last import</th><th>Message</th><th></th></tr></thead>
   <tbody>
@@ -23,23 +24,29 @@
         <form method="post" action="/admin/source/config" style="display:flex;flex-direction:column;gap:4px" data-testid="cfg-<?= View::e($s['slug']) ?>">
           <input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>">
           <?php if (str_contains($s['slug'], 'csv')): ?>
-            <input type="url" name="feed_url" placeholder="CSV feed URL" value="<?= View::e($cfg['feed_url'] ?? '') ?>" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:5px;font-size:.82rem">
+            <input type="url" name="feed_url" placeholder="<?= $s['slug']==='xvideos_csv' ? 'default: xvideos.com-export-week.csv.gz' : 'CSV feed URL' ?>" value="<?= View::e($cfg['feed_url'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-feed-url-<?= View::e($s['slug']) ?>">
           <?php elseif ($s['slug'] === 'xnxx_rapidapi'): ?>
-            <input type="text" name="api_key" placeholder="RAPIDAPI_KEY" value="<?= View::e($cfg['api_key'] ?? '') ?>" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:5px;font-size:.82rem">
-            <input type="text" name="host" placeholder="RAPIDAPI_HOST (optional)" value="<?= View::e($cfg['host'] ?? '') ?>" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:5px;font-size:.82rem">
+            <input type="password" name="api_key" placeholder="RAPIDAPI_KEY" value="<?= View::e($cfg['api_key'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-api-key-xnxx" autocomplete="off">
+            <input type="text" name="host" placeholder="porn-xnxx-api.p.rapidapi.com" value="<?= View::e($cfg['host'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-host-xnxx">
+            <input type="text" name="queries" placeholder="search queries, comma-separated (milf,teen,anal…)" value="<?= View::e($cfg['queries'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-queries-xnxx">
+            <?php if (!empty($cfg['page_cursor'])): ?><span class="muted" style="font-size:.72rem">Next page cursor: <?= (int)$cfg['page_cursor'] ?></span><?php endif; ?>
           <?php else: ?>
             <span class="muted" style="font-size:.8rem">No config required</span>
           <?php endif; ?>
           <?php if ($s['slug'] !== 'demo'): ?>
+            <input type="number" min="10" max="5000" name="import_limit" placeholder="rows per import (default 300)" value="<?= View::e($cfg['import_limit'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-limit-<?= View::e($s['slug']) ?>">
             <button class="btn-ghost" style="padding:4px 10px;font-size:.78rem" data-testid="save-cfg-<?= View::e($s['slug']) ?>">Save config</button>
           <?php endif; ?>
         </form>
       </td>
       <td><?= View::e($s['last_import_at'] ?? '—') ?></td>
-      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= View::e($s['last_status'] ?? '—') ?></td>
+      <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="<?= View::e($s['last_status'] ?? '') ?>" data-testid="status-<?= View::e($s['slug']) ?>"><?= View::e($s['last_status'] ?? '—') ?></td>
       <td style="text-align:right;white-space:nowrap">
         <form method="post" action="/admin/source/toggle" style="display:inline"><input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>"><button class="btn-ghost" data-testid="toggle-<?= View::e($s['slug']) ?>"><?= $s['enabled']?'Disable':'Enable' ?></button></form>
         <form method="post" action="/admin/source/import" style="display:inline"><input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>"><button class="btn-primary" data-testid="import-<?= View::e($s['slug']) ?>">Import</button></form>
+        <?php if ($s['slug'] === 'demo'): ?>
+        <form method="post" action="/admin/source/purge-demo" style="display:inline" onsubmit="return confirm('Delete all demo videos? Real imported videos are kept.')"><button class="btn-ghost" style="color:#ff8887;border-color:rgba(225,6,0,.4)" data-testid="purge-demo">Purge demo</button></form>
+        <?php endif; ?>
       </td>
     </tr>
   <?php endforeach; ?>

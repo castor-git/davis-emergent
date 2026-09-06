@@ -19,6 +19,22 @@ class SourceManager {
         };
     }
 
+    /** Effective row limit for a source: admin-configured import_limit, else the caller's fallback. */
+    public static function limitFor(string $slug, int $fallback): int {
+        $cfg = (int)App::config("sources.{$slug}.import_limit", 0);
+        return $cfg > 0 ? min($cfg, 5000) : $fallback;
+    }
+
+    /** Spawn bin/import.php in the background so long feeds never block the web server or the cron ack. */
+    public static function importAsync(string $slug, int $limit): void {
+        $root = dirname(__DIR__, 2);
+        App::$db->prepare("UPDATE sources SET last_status=? WHERE slug=?")->execute(['RUNNING… started ' . gmdate('H:i:s') . ' UTC', $slug]);
+        $cmd = sprintf('nohup %s %s %s %d >> %s 2>&1 &',
+            escapeshellarg(PHP_BINARY ?: 'php'), escapeshellarg($root . '/bin/import.php'),
+            escapeshellarg($slug), $limit, escapeshellarg($root . '/storage/logs/import.log'));
+        exec($cmd);
+    }
+
     public static function import(string $slug, int $limit = 100): array {
         $db = App::$db;
         try {
@@ -26,15 +42,16 @@ class SourceManager {
             $items = $adapter->fetch($limit);
             $inserted = 0; $updated = 0;
             foreach ($items as $v) {
-                $slugStr = self::slugify($v['title']) . '-' . substr(md5($v['source'].$v['source_video_id']), 0, 6);
+                $title = mb_substr(trim($v['title']) ?: 'Untitled', 0, 255);
+                $slugStr = mb_substr(self::slugify($title), 0, 150) . '-' . substr(md5($v['source'].$v['source_video_id']), 0, 6);
                 $st = $db->prepare("INSERT INTO videos (source, source_video_id, slug, title, description, thumbnail, preview, embed_url, page_url, duration, views, rating, quality, is_featured, published_at)
                     VALUES (:source,:sid,:slug,:title,:desc,:thumb,:preview,:embed,:page,:dur,:views,:rating,:quality,:feat,:pub)
-                    ON DUPLICATE KEY UPDATE title=VALUES(title), views=VALUES(views), rating=VALUES(rating)");
+                    ON DUPLICATE KEY UPDATE title=VALUES(title), views=VALUES(views), rating=VALUES(rating), thumbnail=VALUES(thumbnail), embed_url=VALUES(embed_url), duration=VALUES(duration)");
                 $st->execute([
-                    ':source'=>$v['source'], ':sid'=>$v['source_video_id'], ':slug'=>$slugStr,
-                    ':title'=>$v['title'], ':desc'=>$v['description'] ?? '',
-                    ':thumb'=>$v['thumbnail'] ?? '', ':preview'=>$v['preview'] ?? '',
-                    ':embed'=>$v['embed_url'] ?? '', ':page'=>$v['page_url'] ?? '',
+                    ':source'=>$v['source'], ':sid'=>mb_substr((string)$v['source_video_id'], 0, 191), ':slug'=>$slugStr,
+                    ':title'=>$title, ':desc'=>mb_substr($v['description'] ?? '', 0, 5000),
+                    ':thumb'=>mb_substr($v['thumbnail'] ?? '', 0, 500), ':preview'=>mb_substr($v['preview'] ?? '', 0, 500),
+                    ':embed'=>mb_substr($v['embed_url'] ?? '', 0, 500), ':page'=>mb_substr($v['page_url'] ?? '', 0, 500),
                     ':dur'=>(int)($v['duration'] ?? 0), ':views'=>(int)($v['views'] ?? 0),
                     ':rating'=>(float)($v['rating'] ?? 0), ':quality'=>$v['quality'] ?? 'HD',
                     ':feat'=>(int)($v['is_featured'] ?? 0),
@@ -62,15 +79,15 @@ class SourceManager {
 
     protected static function syncTaxonomy(int $videoId, array $cats, array $tags): void {
         $db = App::$db;
-        foreach ($cats as $name) {
-            $name = trim($name); if ($name === '') continue;
+        foreach (array_unique($cats) as $name) {
+            $name = mb_substr(trim($name), 0, 120); if ($name === '') continue;
             $slug = self::slugify($name);
             $db->prepare("INSERT IGNORE INTO categories (slug, name) VALUES (?, ?)")->execute([$slug, $name]);
             $cid = (int)$db->query("SELECT id FROM categories WHERE slug=".$db->quote($slug))->fetchColumn();
             $db->prepare("INSERT IGNORE INTO video_categories (video_id, category_id) VALUES (?, ?)")->execute([$videoId, $cid]);
         }
-        foreach ($tags as $name) {
-            $name = trim($name); if ($name === '') continue;
+        foreach (array_unique($tags) as $name) {
+            $name = mb_substr(trim($name), 0, 120); if ($name === '') continue;
             $slug = self::slugify($name);
             $db->prepare("INSERT IGNORE INTO tags (slug, name) VALUES (?, ?)")->execute([$slug, $name]);
             $tid = (int)$db->query("SELECT id FROM tags WHERE slug=".$db->quote($slug))->fetchColumn();
@@ -82,6 +99,23 @@ class SourceManager {
         $db = App::$db;
         $db->exec("UPDATE categories c SET video_count = (SELECT COUNT(*) FROM video_categories vc WHERE vc.category_id = c.id)");
         $db->exec("UPDATE tags t SET video_count = (SELECT COUNT(*) FROM video_tags vt WHERE vt.tag_id = t.id)");
+        // Feeds carry no "featured" flag — promote the 12 most-viewed recent videos with an embed
+        $db->exec("UPDATE videos SET is_featured=0 WHERE is_featured=1");
+        $db->exec("UPDATE videos SET is_featured=1 WHERE embed_url<>'' ORDER BY views DESC, published_at DESC LIMIT 12");
+    }
+
+    /** Remove seeded demo videos (and now-orphaned taxonomies) once real feeds are live. */
+    public static function purgeDemo(): int {
+        $db = App::$db;
+        $db->exec("DELETE vc FROM video_categories vc JOIN videos v ON v.id=vc.video_id WHERE v.source='demo'");
+        $db->exec("DELETE vt FROM video_tags vt JOIN videos v ON v.id=vt.video_id WHERE v.source='demo'");
+        $n = $db->exec("DELETE FROM videos WHERE source='demo'");
+        self::recount();
+        $db->exec("DELETE FROM categories WHERE video_count=0");
+        $db->exec("DELETE FROM tags WHERE video_count=0");
+        $db->exec("UPDATE sources SET enabled=0, last_status='Purged demo data' WHERE slug='demo'");
+        \App\Core\Cache::forget();
+        return (int)$n;
     }
 
     public static function slugify(string $s): string {

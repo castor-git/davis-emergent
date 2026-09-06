@@ -37,12 +37,12 @@ Build DAVISPORN, a responsive adult video aggregation website inspired by porndi
 - Testing pass 2 confirmed both HIGH bugs fixed (age gate persistence, sitemap host).
 
 ## Backlog / P1
-- P1 — Real source imports: paste an Upornia/XVideos CSV URL and enable it from admin, then click Import.
-- P1 — Continuous scheduler for imports (Emergent cron / `.emergent/crons.yml`).
-- P1 — Per-source RapidAPI configuration UI (currently only via env).
+- P1 — Upornia CSV feed: user has not supplied a feed URL yet (adapter ready, source disabled).
+- P1 — Gemini AI integration (use-case still unclarified: auto-tagging / descriptions / SEO copy) — use integration_expert + Emergent LLM key.
+- P1 — `EMERGENT_EMAIL_KEY` still blank → weekly digest logs but doesn't send.
+- P2 — XVideos "deleted urls" feed → remove dead videos.
 - P2 — User accounts, favorites, watch history.
 - P2 — Comments and ratings.
-- P2 — Ad slot management.
 
 ## Deployment note
 This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend` and `frontend` supervisor programs are still HTTP servers on the expected ports. If Emergent's deploy pipeline strictly requires FastAPI on 8001 (it does), the current setup satisfies it: FastAPI is running and is just acting as a proxy. MariaDB persistence lives on the pod volume — for a real deploy consider externalizing MariaDB or migrating to MongoDB.
@@ -133,3 +133,13 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - `PrefsController` accepts `type` in POST body; `GET /api/prefs` now returns `{category:{pins,hides,labels,all}, tag:{pins,hides,labels,all}, ...backwards-compat category keys}` so older drawer code keeps working.
 - Home "Trending tags" section now renders each chip with `☆` pin and `✕` hide buttons (`tag-pin-{slug}` / `tag-hide-{slug}`). Chips are reordered with pins first and hidden ones filtered out; a "Hidden tags: N — clear" line appears when needed.
 - Drawer gained two tabs (`pref-tab-category`, `pref-tab-tag`) each with its own pinned/hidden lists, search box and picker. Bulk "Clear hidden" wipes hides across both taxonomies.
+
+## Iteration 17 (2026-06) — REAL FEEDS LIVE (XVideos CSV + XNXX RapidAPI)
+- **XVideosCsvAdapter** rewritten for the official webmaster export (`;`-separated, no header, 15 cols: url,title,duration,thumb,embed,tags,pornstars,id,category,quality,uploader,-,date,preview,views). Streams `.csv.gz` over HTTPS with `zlib.inflate` filter and stops after `import_limit` rows, so even the 800 MB full export is never fully downloaded. Default feed = `xvideos.com-export-week.csv.gz`. Cleans mangled entities (`&#039_`), maps 1080P→FullHD/720P→HD/SD, "Unknown" category skipped, pornstars become tags.
+- **XnxxRapidApiAdapter** rewritten for `porn-xnxx-api.p.rapidapi.com`: `POST /search {q,page}` → `{count,page,results[{title,thumbnail,duration,views,video_link}]}`. Embed built as `https://www.xnxx.com/embedframe/{id}`; duration ("10min"/"02:23:44") and views ("22.7M") parsed. Iterates configurable `queries` (default 12 categories) and rotates `page_cursor` (1..8) stored in `sources.config` so each 6-hourly cron discovers new videos with ~12 requests.
+- **Background imports**: `bin/import.php <slug> [limit]` CLI runner; `SourceManager::importAsync()` spawns it with nohup (log `storage/logs/import.log`), status column shows `RUNNING…` then `OK — inserted N, updated M`. Admin Import button and cron `/api/cron/nightly-import` both use it. `SourceManager::limitFor()` honours per-source `import_limit` (default 300, XVideos 500, XNXX 400, max 5000).
+- Admin: config form gains `queries`, `import_limit`, masked api_key; **Purge demo** button (`POST /admin/source/purge-demo`, refuses if no real videos). `saveSourceConfig` now touches only submitted fields (partial POST can no longer wipe the API key). `toggleSource` keeps `enabled` column and JSON in sync.
+- `recount()` auto-promotes the 12 most-viewed embedded videos to Featured; home Featured grid shows 12 (`data-testid=featured-grid`).
+- Resilience: `bootstrap.sh` uses `flock` + waits for foreign apt locks (previous FATAL was two parallel apt runs), initialises datadir at `/app/mysql`; supervisor `startretries=30`, `PHP_CLI_SERVER_WORKERS=8`, `stopasgroup/killasgroup` for php-app.
+- State: demo purged; ~530 XVideos + ~750 XNXX videos live with real embeds; Upornia still disabled (no feed URL). Test iteration 5: 18/18 backend PASS + UI smoke.
+- Credentials live in DB `sources.config` (xnxx api_key/host, xvideos feed_url) — see `/app/memory/test_credentials.md`.

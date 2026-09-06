@@ -13,7 +13,7 @@
 
 <section class="section">
   <div class="section-head"><h2>Featured</h2><a href="/videos?featured=1">See all →</a></div>
-  <div class="grid">
+  <div class="grid" data-testid="featured-grid">
     <?php foreach ($featured as $video) include __DIR__.'/../partials/card.php'; ?>
   </div>
 </section>

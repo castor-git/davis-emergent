@@ -39,6 +39,7 @@ $router->get('/admin', fn() => (new AdminController())->dashboard());
 $router->post('/admin/source/toggle', fn() => (new AdminController())->toggleSource());
 $router->post('/admin/source/import', fn() => (new AdminController())->importSource());
 $router->post('/admin/source/config', fn() => (new AdminController())->saveSourceConfig());
+$router->post('/admin/source/purge-demo', fn() => (new AdminController())->purgeDemo());
 $router->post('/admin/ads/save', fn() => (new AdminController())->saveAd());
 $router->post('/admin/ads/delete', fn() => (new AdminController())->deleteAd());
 $router->get('/admin/landings/new', fn() => (new AdminController())->landingForm());

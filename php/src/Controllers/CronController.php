@@ -24,8 +24,7 @@ class CronController {
         $db = App::$db;
         $rows = $db->query("SELECT slug FROM sources WHERE enabled=1 AND slug <> 'demo'")->fetchAll();
         foreach ($rows as $r) {
-            try { SourceManager::import($r['slug'], 200); }
-            catch (\Throwable $e) { /* status already saved by SourceManager */ }
+            SourceManager::importAsync($r['slug'], SourceManager::limitFor($r['slug'], 300));
         }
         \App\Core\Cache::forget();
     }

@@ -4,7 +4,14 @@
 set -e
 LOG=/var/log/davisporn-bootstrap.log
 exec >>"$LOG" 2>&1
+# Serialize concurrent invocations (mariadb + php-app start at the same time)
+exec 9>/var/lock/davisporn-bootstrap.lock
+flock -w 600 9
 echo "[$(date -u)] bootstrap start"
+# Wait for any foreign apt/dpkg process to release its lock
+for _ in $(seq 1 120); do
+  if fuser /var/lib/dpkg/lock-frontend /var/lib/apt/lists/lock >/dev/null 2>&1; then sleep 5; else break; fi
+done
 
 # Install packages if binaries missing
 NEED_PKGS=""
@@ -16,11 +23,11 @@ if [ -n "$NEED_PKGS" ]; then
   DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends $NEED_PKGS
 fi
 
-# Init MariaDB data dir if empty
-mkdir -p /var/run/mysqld /var/lib/mysql
-chown -R mysql:mysql /var/run/mysqld /var/lib/mysql
-if [ ! -d /var/lib/mysql/mysql ]; then
+# Init MariaDB data dir if empty (persistent datadir lives under /app/mysql)
+mkdir -p /var/run/mysqld /app/mysql
+chown -R mysql:mysql /var/run/mysqld /app/mysql
+if [ ! -d /app/mysql/mysql ]; then
   echo "installing db"
-  mariadb-install-db --user=mysql --datadir=/var/lib/mysql --auth-root-authentication-method=normal >/dev/null
+  mariadb-install-db --user=mysql --datadir=/app/mysql --auth-root-authentication-method=normal >/dev/null
 fi
 echo "[$(date -u)] bootstrap done"

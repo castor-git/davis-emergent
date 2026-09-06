@@ -166,16 +166,15 @@ class AdminController {
     public function saveSourceConfig(): void {
         $this->auth();
         $slug = $_POST['slug'] ?? '';
-        $config = [
-            'feed_url' => trim($_POST['feed_url'] ?? ''),
-            'api_key' => trim($_POST['api_key'] ?? ''),
-            'host' => trim($_POST['host'] ?? ''),
-        ];
+        // Only fields present in the request are touched; an explicitly submitted empty field clears that key.
+        $fields = ['feed_url', 'api_key', 'host', 'queries', 'import_limit'];
         $st = App::$db->prepare("SELECT config FROM sources WHERE slug=?"); $st->execute([$slug]);
-        $existing = json_decode($st->fetchColumn() ?: '{}', true) ?: [];
-        $merged = array_merge($existing, array_filter($config, fn($v)=>$v!==''));
-        // Also allow explicit clearing via empty submission
-        foreach ($config as $k => $v) if ($v === '') $merged[$k] = '';
+        $merged = json_decode($st->fetchColumn() ?: '{}', true) ?: [];
+        foreach ($fields as $k) {
+            if (!array_key_exists($k, $_POST)) continue;
+            $v = trim((string)$_POST[$k]);
+            $merged[$k] = $k === 'import_limit' ? ((int)$v ?: '') : $v;
+        }
         App::$db->prepare("UPDATE sources SET config=? WHERE slug=?")->execute([json_encode($merged), $slug]);
         header('Location: /admin?msg=' . urlencode('Source config saved: ' . $slug));
         exit;
@@ -213,17 +212,33 @@ class AdminController {
     public function toggleSource(): void {
         $this->auth();
         $slug = $_POST['slug'] ?? '';
-        $st = App::$db->prepare("UPDATE sources SET enabled = 1 - enabled WHERE slug=?");
-        $st->execute([$slug]);
+        $st = App::$db->prepare("SELECT enabled, config FROM sources WHERE slug=?"); $st->execute([$slug]);
+        if ($row = $st->fetch()) {
+            $on = (int)$row['enabled'] ? 0 : 1;
+            $cfg = json_decode($row['config'] ?: '{}', true) ?: [];
+            $cfg['enabled'] = (bool)$on;
+            App::$db->prepare("UPDATE sources SET enabled=?, config=? WHERE slug=?")->execute([$on, json_encode($cfg), $slug]);
+        }
         header('Location: /admin'); exit;
     }
 
     public function importSource(): void {
         $this->auth();
         $slug = $_POST['slug'] ?? '';
-        $r = SourceManager::import($slug, 100);
-        Cache::forget();
-        header('Location: /admin?msg=' . urlencode($r['message'])); exit;
+        if ($slug === 'demo') {
+            $r = SourceManager::import($slug, 100);
+            header('Location: /admin?msg=' . urlencode($r['message'])); exit;
+        }
+        SourceManager::importAsync($slug, SourceManager::limitFor($slug, 300));
+        header('Location: /admin?msg=' . urlencode("Import of {$slug} started in background — refresh in ~30s to see the result")); exit;
+    }
+
+    public function purgeDemo(): void {
+        $this->auth();
+        $real = (int)App::$db->query("SELECT COUNT(*) FROM videos WHERE source <> 'demo'")->fetchColumn();
+        if ($real === 0) { header('Location: /admin?msg=' . urlencode('Import a real source first — refusing to purge demo data into an empty site')); exit; }
+        $n = SourceManager::purgeDemo();
+        header('Location: /admin?msg=' . urlencode("Removed {$n} demo videos and orphaned categories/tags")); exit;
     }
 
     public function clearCache(): void {
