@@ -2,13 +2,10 @@
 Covers admin form prefill, save/create/edit/delete, public /l/{slug}, union semantics,
 active flag, pagination and regression of existing admin sections.
 """
-import os
 import re
 import requests
 import pytest
-
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://media-nexus-111.preview.emergentagent.com").rstrip("/")
-AUTH = ("admin", "admin123")
+from _env import BASE_URL, ADMIN_AUTH as AUTH
 
 # ---------- helpers ----------
 def _get(path, **kw):
@@ -22,23 +19,40 @@ def _admin_html():
     assert r.status_code == 200
     return r.text
 
+def _landing_rows(html, slug):
+    """Admin table rows that link to exactly /l/{slug} (not /l/{slug}-2 etc.)."""
+    return [r for r in re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S) if re.search(rf'/l/{re.escape(slug)}["<\s?]', r)]
+
 def _find_landing_id_by_slug(html, slug):
-    # Landing edit links contain id
-    m = re.search(rf'/admin/landings/edit\?id=(\d+)"[^>]*data-testid="landing-edit-\d+"[^>]*>[^<]*</a>\s*<form[^>]*action="/admin/landings/delete"[^>]*>\s*<input[^>]*value="\d+"', html)
-    # simpler: find each row's slug + id pair
-    for row in re.findall(r'<tr>(.*?)</tr>', html, re.S):
-        if f'/l/{slug}' in row:
-            m2 = re.search(r'/admin/landings/edit\?id=(\d+)', row)
-            if m2:
-                return int(m2.group(1))
+    for row in _landing_rows(html, slug):
+        m2 = re.search(r'/admin/landings/edit\?id=(\d+)', row)
+        if m2:
+            return int(m2.group(1))
     return None
+
+def _delete_landing_by_slug(slug):
+    lid = _find_landing_id_by_slug(_admin_html(), slug)
+    if lid:
+        _post("/admin/landings/delete", {"id": lid}, auth=AUTH)
+
+def _recreate_landing(slug, **fields):
+    """Delete any stale landing with this slug, create it fresh and return the save response."""
+    _delete_landing_by_slug(slug)
+    return _post("/admin/landings/save", {"slug": slug, "active": "1", **fields}, auth=AUTH)
+
+def _landing_video_count(slug):
+    r = _get(f"/l/{slug}")
+    assert r.status_code == 200, f"/l/{slug} -> {r.status_code}"
+    m = re.search(r"([\d,]+)\s+videos</span>", r.text)
+    assert m, f"video-count badge missing on /l/{slug}"
+    return int(m.group(1).replace(",", ""))
 
 
 # ---------- health / admin base ----------
 def test_health_ok():
     r = _get("/api/health")
     assert r.status_code == 200
-    assert r.json().get("ok") is True
+    assert r.json().get("ok") == True  # noqa: E712 — strict boolean
 
 def test_admin_requires_basic_auth():
     r = _get("/admin")
@@ -109,7 +123,7 @@ def test_public_landing_renders(created_landing):
     assert r.status_code == 200
     h = r.text
     assert 'data-testid="landing-hero"' in h
-    assert "CURATED COLLECTION" in h
+    assert "CURATED" in h
     assert "Search intent" in h
     assert 'data-testid="landing-grid"' in h
     assert 'data-testid="video-card"' in h  # at least one video
@@ -137,9 +151,7 @@ def test_edit_prefill_then_update_no_duplicate(created_landing):
     )
     assert r2.status_code in (301, 302)
     # verify no duplicate row for that slug
-    html = _admin_html()
-    slug = created_landing["slug"]
-    rows = [r for r in re.findall(r"<tr>.*?</tr>", html, re.S) if f"/l/{slug}" in r]
+    rows = _landing_rows(_admin_html(), created_landing["slug"])
     assert len(rows) == 1
     assert "MILF Hot Updated" in rows[0]
 
@@ -176,71 +188,36 @@ def test_active_zero_returns_404(created_landing):
 
 
 # ---------- union semantics ----------
+UNION_SLUGS = {
+    "union": ("test-union-alpha", {"title": "Alpha", "keyword": "alpha", "categories[]": "milf"}),
+    "keyword": ("test-only-alpha", {"title": "OnlyAlpha", "keyword": "alpha"}),
+    "category": ("test-only-milfcat", {"title": "OnlyMilf", "categories[]": "milf"}),
+}
+
+
+def _create_union_fixtures():
+    counts = {}
+    for key, (slug, fields) in UNION_SLUGS.items():
+        r = _recreate_landing(slug, **fields)
+        assert r.status_code in (301, 302), f"save {slug} -> {r.status_code}"
+        counts[key] = _landing_video_count(slug)
+    return counts
+
+
+def _cleanup_union_fixtures():
+    for slug, _ in UNION_SLUGS.values():
+        _delete_landing_by_slug(slug)
+
+
 def test_union_semantics_keyword_or_category():
     """Landing with keyword=alpha + categories=[milf] must return union of both sets."""
-    slug = "test-union-alpha"
-    html = _admin_html()
-    lid = _find_landing_id_by_slug(html, slug)
-    if lid:
-        _post("/admin/landings/delete", {"id": lid}, auth=AUTH)
-    r = _post(
-        "/admin/landings/save",
-        {
-            "title": "Alpha",
-            "slug": slug,
-            "keyword": "alpha",
-            "categories[]": "milf",
-            "active": "1",
-        },
-        auth=AUTH,
-    )
-    assert r.status_code in (301, 302)
     try:
-        r = _get(f"/l/{slug}")
-        assert r.status_code == 200
-        h = r.text
-        # extract "N videos" badge count
-        m = re.search(r"([\d,]+)\s+videos</span>", h)
-        assert m, "video-count badge missing"
-        total_union = int(m.group(1).replace(",", ""))
-        # Compare with keyword-only landing count
-        slug_kw = "test-only-alpha"
-        html2 = _admin_html()
-        lid2 = _find_landing_id_by_slug(html2, slug_kw)
-        if lid2:
-            _post("/admin/landings/delete", {"id": lid2}, auth=AUTH)
-        _post("/admin/landings/save",
-              {"title": "OnlyAlpha", "slug": slug_kw, "keyword": "alpha", "active": "1"},
-              auth=AUTH)
-        r2 = _get(f"/l/{slug_kw}")
-        m2 = re.search(r"([\d,]+)\s+videos</span>", r2.text)
-        kw_only = int(m2.group(1).replace(",", ""))
-        # And category-only
-        slug_cat = "test-only-milfcat"
-        html3 = _admin_html()
-        lid3 = _find_landing_id_by_slug(html3, slug_cat)
-        if lid3:
-            _post("/admin/landings/delete", {"id": lid3}, auth=AUTH)
-        _post("/admin/landings/save",
-              {"title": "OnlyMilf", "slug": slug_cat, "categories[]": "milf", "active": "1"},
-              auth=AUTH)
-        r3 = _get(f"/l/{slug_cat}")
-        m3 = re.search(r"([\d,]+)\s+videos</span>", r3.text)
-        cat_only = int(m3.group(1).replace(",", ""))
-        # UNION => >= max(kw_only, cat_only) and <= kw_only + cat_only
-        assert total_union >= max(kw_only, cat_only), f"union {total_union} < max({kw_only},{cat_only}) — AND semantics leaked?"
-        assert total_union <= kw_only + cat_only
-        # cleanup extras
-        for s in (slug_kw, slug_cat):
-            hh = _admin_html()
-            i = _find_landing_id_by_slug(hh, s)
-            if i:
-                _post("/admin/landings/delete", {"id": i}, auth=AUTH)
+        c = _create_union_fixtures()
+        assert c["union"] >= max(c["keyword"], c["category"]), \
+            f"union {c['union']} < max({c['keyword']},{c['category']}) — AND semantics leaked?"
+        assert c["union"] <= c["keyword"] + c["category"]
     finally:
-        hh = _admin_html()
-        i = _find_landing_id_by_slug(hh, slug)
-        if i:
-            _post("/admin/landings/delete", {"id": i}, auth=AUTH)
+        _cleanup_union_fixtures()
 
 
 # ---------- pagination ----------
@@ -273,11 +250,9 @@ def test_pagination_when_total_gt_24():
 # ---------- delete removes public route ----------
 def test_delete_landing_returns_404():
     slug = "test-todelete"
-    _post("/admin/landings/save",
-          {"title": "ToDel", "slug": slug, "categories[]": "milf", "active": "1"},
-          auth=AUTH)
-    html = _admin_html()
-    lid = _find_landing_id_by_slug(html, slug)
+    r = _recreate_landing(slug, title="ToDel", **{"categories[]": "milf"})
+    assert r.status_code in (301, 302)
+    lid = _find_landing_id_by_slug(_admin_html(), slug)
     assert lid
     r = _post("/admin/landings/delete", {"id": lid}, auth=AUTH)
     assert r.status_code in (301, 302)

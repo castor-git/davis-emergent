@@ -31,5 +31,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`[proxy] listening on http://${host}:${port} -> ${UPSTREAM}`);
+  if (process.env.NODE_ENV !== 'production') {
+    process.stdout.write(`[proxy] listening on http://${host}:${port} -> ${UPSTREAM}\n`);
+  }
 });

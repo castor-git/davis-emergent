@@ -143,3 +143,9 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - Resilience: `bootstrap.sh` uses `flock` + waits for foreign apt locks (previous FATAL was two parallel apt runs), initialises datadir at `/app/mysql`; supervisor `startretries=30`, `PHP_CLI_SERVER_WORKERS=8`, `stopasgroup/killasgroup` for php-app.
 - State: demo purged; ~530 XVideos + ~750 XNXX videos live with real embeds; Upornia still disabled (no feed URL). Test iteration 5: 18/18 backend PASS + UI smoke.
 - Credentials live in DB `sources.config` (xnxx api_key/host, xvideos feed_url) — see `/app/memory/test_credentials.md`.
+
+## Iteration 18 (2026-06) — Code review fixes
+- Tests: secrets/URLs removed from source; `backend/tests/_env.py` loads `backend/.env` (+ `frontend/.env`) and exposes `BASE_URL`, `ADMIN_AUTH` (`ADMIN_USER`/`ADMIN_PASS`), `CRON_SECRET`. `is True` → `== True`; complex tests split into helpers (`_wait_for_import`, `_recreate_landing`, `_landing_video_count`, `UNION_SLUGS`…); stale iteration-4 assertions repaired (`<tr >` rows, exact slug match, `CURATED ·` badge, crons.yml lookup by endpoint).
+- `backend/server.py`: `upstream` used only inside `try`; unused import dropped.
+- Frontend (unused React shell, still linted): `App.js` effect without stale closure + no console; `use-toast.js` reducer split into `dismissToasts`/`removeToasts` with default branch, effect deps `[setState]`; `proxy.js`/`craco.config.js` logs guarded by `NODE_ENV`.
+- Test iteration 6: 26/26 + 19/19 backend PASS, UI smoke PASS.

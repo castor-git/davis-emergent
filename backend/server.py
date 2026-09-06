@@ -6,7 +6,6 @@
 import os
 import httpx
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import StreamingResponse
 
 PHP_UPSTREAM = os.environ.get("PHP_UPSTREAM", "http://127.0.0.1:9000")
 
@@ -36,10 +35,10 @@ async def _proxy(request: Request, path: str) -> Response:
     body = await request.body()
     try:
         upstream = await client.request(request.method, url, headers=headers, content=body)
+        resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() not in HOP_BY_HOP}
+        return Response(content=upstream.content, status_code=upstream.status_code, headers=resp_headers)
     except httpx.RequestError as e:
         return Response(f"Upstream error: {e}", status_code=502)
-    resp_headers = {k: v for k, v in upstream.headers.items() if k.lower() not in HOP_BY_HOP}
-    return Response(content=upstream.content, status_code=upstream.status_code, headers=resp_headers)
 
 @app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
 async def catch_all(full_path: str, request: Request):

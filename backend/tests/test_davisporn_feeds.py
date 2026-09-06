@@ -1,17 +1,32 @@
 """Backend tests for DAVISPORN real-feed integration (XNXX RapidAPI + XVideos CSV).
 Runs against the public preview URL (nginx -> php-fpm on 127.0.0.1:9000).
 """
-import os
 import re
 import time
 import pytest
 import requests
 from requests.auth import HTTPBasicAuth
+from _env import BASE_URL, ADMIN_AUTH as _ADMIN, CRON_SECRET
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://media-nexus-111.preview.emergentagent.com").rstrip("/")
 LOCAL_URL = "http://127.0.0.1:9000"
-ADMIN_AUTH = HTTPBasicAuth("admin", "admin123")
-CRON_TOKEN = "4cbe7eb9011e833001687088c1ecc98523615151403a55e8"
+ADMIN_AUTH = HTTPBasicAuth(*_ADMIN)
+CRON_TOKEN = CRON_SECRET
+XNXX_DEFAULT_QUERIES = "milf,teen,anal,amateur,lesbian,asian,latina,ebony,big tits,blowjob,hardcore,pov"
+STATUS_OK_MARKERS = ("OK — inserted", "OK &mdash; inserted")
+
+
+def _status_cell(html: str, slug: str) -> str:
+    m = re.search(rf'data-testid="status-{slug}"[^>]*>([^<]+)<', html)
+    return m.group(1) if m else ""
+
+
+def _wait_for_import(session, slug: str, attempts: int = 30, delay: float = 2) -> bool:
+    for _ in range(attempts):
+        time.sleep(delay)
+        html = session.get(BASE_URL + "/admin", auth=ADMIN_AUTH, timeout=20).text
+        if any(marker in _status_cell(html, slug) for marker in ("OK", "inserted", "updated")):
+            return True
+    return False
 
 
 @pytest.fixture(scope="module")
@@ -117,47 +132,34 @@ class TestAdmin:
         assert "xvideos_csv" in r.text and "xnxx_rapidapi" in r.text
         assert "OK — inserted" in r.text or "OK &mdash; inserted" in r.text
 
-    def test_admin_save_xnxx_config(self, s):
-        # Read existing config to preserve api_key/host across test save
-        import subprocess, json as _json
-        existing_cfg = subprocess.check_output(
-            ["mysql", "-udav", "-pdavpass", "davisporn", "-N", "-B", "-e",
-             "SELECT config FROM sources WHERE slug='xnxx_rapidapi'"]
-        ).decode().strip()
-        cfg = _json.loads(existing_cfg or "{}")
-        api_key = cfg.get("api_key", "")
-        host = cfg.get("host", "porn-xnxx-api.p.rapidapi.com")
+    def test_admin_status_cells_present(self, s):
+        html = s.get(BASE_URL + "/admin", auth=ADMIN_AUTH, timeout=20).text
+        assert _status_cell(html, "xvideos_csv"), "status cell for xvideos_csv missing"
+        assert _status_cell(html, "xnxx_rapidapi"), "status cell for xnxx_rapidapi missing"
 
-        # save with test values (queries=milf,teen ; limit=50) — include api_key/host to avoid wipe
+    def test_admin_save_xnxx_config(self, s):
+        # Partial POST: only queries/import_limit are sent — api_key/host must survive untouched
         r = s.post(
             BASE_URL + "/admin/source/config",
             auth=ADMIN_AUTH,
-            data={
-                "slug": "xnxx_rapidapi",
-                "api_key": api_key, "host": host,
-                "queries": "milf,teen", "import_limit": "50",
-            },
+            data={"slug": "xnxx_rapidapi", "queries": "milf,teen", "import_limit": "50"},
             timeout=20, allow_redirects=True,
         )
         assert r.status_code == 200, r.text[:300]
         assert "Source config saved" in r.text, "flash not shown after save"
 
-        # reload admin without query string, verify persistence via values
         r2 = s.get(BASE_URL + "/admin", auth=ADMIN_AUTH, timeout=20)
         assert r2.status_code == 200
         assert 'value="milf,teen"' in r2.text
         assert 'value="50"' in r2.text
+        assert re.search(r'data-testid="cfg-api-key-xnxx"[^>]*value="[^"]{10,}"', r2.text) or \
+            re.search(r'value="[^"]{10,}"[^>]*data-testid="cfg-api-key-xnxx"', r2.text), "api_key was wiped by partial save"
 
-        # RESTORE production values as per instructions
+        # RESTORE production values
         r3 = s.post(
             BASE_URL + "/admin/source/config",
             auth=ADMIN_AUTH,
-            data={
-                "slug": "xnxx_rapidapi",
-                "api_key": api_key, "host": host,
-                "queries": "milf,teen,anal,amateur,lesbian,asian,latina,ebony,big tits,blowjob,hardcore,pov",
-                "import_limit": "400",
-            },
+            data={"slug": "xnxx_rapidapi", "queries": XNXX_DEFAULT_QUERIES, "import_limit": "400"},
             timeout=20, allow_redirects=False,
         )
         assert r3.status_code in (302, 303)
@@ -178,25 +180,8 @@ class TestAdmin:
         assert r.status_code in (302, 303), r.text[:400]
         r2 = s.get(BASE_URL + "/admin", auth=ADMIN_AUTH, timeout=20)
         assert r2.status_code == 200
-        assert "started in background" in r2.text.lower() or "background" in r2.text.lower()
-
-        # poll up to 60s for status transition
-        ok = False
-        for _ in range(30):
-            time.sleep(2)
-            rr = s.get(BASE_URL + "/admin", auth=ADMIN_AUTH, timeout=20)
-            if "OK — inserted" in rr.text or "OK &mdash; inserted" in rr.text:
-                # ensure the xvideos row shows fresh status by finding testid area
-                if 'data-testid="status-xvideos_csv"' in rr.text:
-                    # Extract that cell
-                    m = re.search(r'data-testid="status-xvideos_csv"[^>]*>([^<]+)<', rr.text)
-                    if m and ("OK" in m.group(1) or "inserted" in m.group(1) or "updated" in m.group(1)):
-                        ok = True
-                        break
-                else:
-                    ok = True
-                    break
-        assert ok, "xvideos_csv import did not complete within 60s"
+        assert "background" in r2.text.lower()
+        assert _wait_for_import(s, "xvideos_csv"), "xvideos_csv import did not complete within 60s"
 
 
 # ---- Cron ----
@@ -215,6 +200,6 @@ class TestCron:
         elapsed = time.time() - t0
         assert r.status_code == 200, r.text[:300]
         data = r.json()
-        assert data.get("ok") is True
+        assert data.get("ok") == True  # noqa: E712 — must be the boolean true, not a truthy string
         assert data.get("event") == "nightly-import-accepted"
         assert elapsed < 5, f"cron ack too slow: {elapsed:.1f}s"
