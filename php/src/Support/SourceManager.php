@@ -7,6 +7,7 @@ use App\Adapters\DemoAdapter;
 use App\Adapters\UporniaCsvAdapter;
 use App\Adapters\XVideosCsvAdapter;
 use App\Adapters\XnxxRapidApiAdapter;
+use App\Support\UporniaDeletedCleaner;
 
 class SourceManager {
     public static function adapter(string $slug): SourceAdapter {
@@ -22,7 +23,8 @@ class SourceManager {
     /** Effective row limit for a source: admin-configured import_limit, else the caller's fallback. */
     public static function limitFor(string $slug, int $fallback): int {
         $cfg = (int)App::config("sources.{$slug}.import_limit", 0);
-        return $cfg > 0 ? min($cfg, 5000) : $fallback;
+        $maximum = $slug === 'upornia_csv' ? 10000 : 5000;
+        return $cfg > 0 ? min($cfg, $maximum) : $fallback;
     }
 
     /** Spawn bin/import.php in the background so long feeds never block the web server or the cron ack. */
@@ -37,6 +39,14 @@ class SourceManager {
 
     public static function import(string $slug, int $limit = 100): array {
         $db = App::$db;
+        $locked = false;
+        if ($slug === 'upornia_csv') {
+            $locked = (int)$db->query("SELECT GET_LOCK('upornia_import', 0)")->fetchColumn() === 1;
+            if (!$locked) {
+                $message = 'SKIPPED — another Upornia import is already running';
+                return ['ok' => true, 'inserted' => 0, 'updated' => 0, 'message' => $message];
+            }
+        }
         try {
             $adapter = self::adapter($slug);
             $items = $adapter->fetch($limit);
@@ -46,7 +56,7 @@ class SourceManager {
                 $slugStr = mb_substr(self::slugify($title), 0, 150) . '-' . substr(md5($v['source'].$v['source_video_id']), 0, 6);
                 $st = $db->prepare("INSERT INTO videos (source, source_video_id, slug, title, description, thumbnail, preview, embed_url, page_url, duration, views, rating, quality, is_featured, published_at)
                     VALUES (:source,:sid,:slug,:title,:desc,:thumb,:preview,:embed,:page,:dur,:views,:rating,:quality,:feat,:pub)
-                    ON DUPLICATE KEY UPDATE title=VALUES(title), views=VALUES(views), rating=VALUES(rating), thumbnail=VALUES(thumbnail), embed_url=VALUES(embed_url), duration=VALUES(duration), is_available=1, unavailable_at=NULL");
+                    ON DUPLICATE KEY UPDATE title=VALUES(title), description=VALUES(description), views=VALUES(views), rating=VALUES(rating), thumbnail=VALUES(thumbnail), preview=VALUES(preview), embed_url=VALUES(embed_url), page_url=VALUES(page_url), duration=VALUES(duration), published_at=VALUES(published_at), is_available=1, unavailable_at=NULL");
                 $st->execute([
                     ':source'=>$v['source'], ':sid'=>mb_substr((string)$v['source_video_id'], 0, 191), ':slug'=>$slugStr,
                     ':title'=>$title, ':desc'=>mb_substr($v['description'] ?? '', 0, 5000),
@@ -64,8 +74,15 @@ class SourceManager {
                 } else { $inserted++; }
                 self::syncTaxonomy($vid, $v['categories'] ?? [], $v['tags'] ?? []);
             }
+            $hidden = 0;
+            if ($slug === 'upornia_csv') {
+                $hidden = UporniaDeletedCleaner::run();
+            }
             self::recount();
             $status = "OK — inserted {$inserted}, updated {$updated}";
+            if ($slug === 'upornia_csv') {
+                $status .= ", hidden {$hidden} deleted";
+            }
             $upd = $db->prepare("UPDATE sources SET last_import_at=NOW(), last_status=? WHERE slug=?");
             $upd->execute([$status, $slug]);
             \App\Core\Cache::forget();
@@ -74,6 +91,10 @@ class SourceManager {
             $upd = $db->prepare("UPDATE sources SET last_status=? WHERE slug=?");
             $upd->execute(['ERROR: ' . $e->getMessage(), $slug]);
             return ['ok'=>false,'message'=>$e->getMessage()];
+        } finally {
+            if ($locked) {
+                $db->query("SELECT RELEASE_LOCK('upornia_import')");
+            }
         }
     }
 

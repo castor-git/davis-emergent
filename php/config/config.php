@@ -23,9 +23,11 @@ return [
         ],
         'upornia_csv' => [
             'enabled' => false,
-            'label' => 'Upornia CSV Feed',
+            'label' => 'Upornia XML Feed',
             'adapter' => 'UporniaCsvAdapter',
             'feed_url' => getenv('UPORNIA_CSV_URL') ?: '',
+            'deleted_feed_url' => getenv('UPORNIA_DELETED_URL') ?: '',
+            'import_limit' => 10000,
         ],
         'xvideos_csv' => [
             'enabled' => false,

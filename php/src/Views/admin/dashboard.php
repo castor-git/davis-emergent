@@ -27,6 +27,10 @@
           <input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>">
           <?php if (str_contains($s['slug'], 'csv')): ?>
             <input type="url" name="feed_url" placeholder="<?= $s['slug']==='xvideos_csv' ? 'default: xvideos.com-export-week.csv.gz' : 'CSV feed URL' ?>" value="<?= View::e($cfg['feed_url'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-feed-url-<?= View::e($s['slug']) ?>">
+            <?php if ($s['slug'] === 'upornia_csv'): ?>
+              <input type="url" value="<?= View::e($cfg['deleted_feed_url'] ?? '') ?>" readonly style="<?= $inp ?>" data-testid="cfg-deleted-feed-upornia">
+              <span class="muted" style="font-size:.72rem">XML feed imports HD videos; deleted IDs are reconciled after each import.</span>
+            <?php endif; ?>
             <?php if ($s['slug'] === 'xvideos_csv'): ?>
               <input type="url" value="<?= View::e($cfg['deleted_feed_url'] ?? '') ?>" readonly style="<?= $inp ?>" data-testid="cfg-deleted-feed-xvideos">
               <input type="url" value="<?= View::e($cfg['deleted_full_feed_url'] ?? '') ?>" readonly style="<?= $inp ?>" data-testid="cfg-deleted-full-feed-xvideos">
@@ -41,7 +45,7 @@
             <span class="muted" style="font-size:.8rem">No config required</span>
           <?php endif; ?>
           <?php if ($s['slug'] !== 'demo'): ?>
-            <input type="number" min="10" max="5000" name="import_limit" placeholder="rows per import (default 300)" value="<?= View::e($cfg['import_limit'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-limit-<?= View::e($s['slug']) ?>">
+            <input type="number" min="10" max="<?= $s['slug'] === 'upornia_csv' ? '10000' : '5000' ?>" name="import_limit" placeholder="rows per import (default 300)" value="<?= View::e($cfg['import_limit'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-limit-<?= View::e($s['slug']) ?>">
             <button class="btn-ghost" style="padding:4px 10px;font-size:.78rem" data-testid="save-cfg-<?= View::e($s['slug']) ?>">Save config</button>
           <?php endif; ?>
         </form>
