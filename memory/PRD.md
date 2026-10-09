@@ -40,7 +40,7 @@ Build DAVISPORN, a responsive adult video aggregation website inspired by porndi
 - P1 — Upornia CSV feed: user has not supplied a feed URL yet (adapter ready, source disabled).
 - P1 — Import dashboard: live import log plus per-source new-video charts in admin.
 - P1 — `EMERGENT_EMAIL_KEY` still blank → weekly digest logs but doesn't send.
-- P1 — XVideos deleted-URL feed: cleanup engine is ready, but its source HTTPS URL must be configured.
+- P1 — Import dashboard: live import log plus per-source new-video charts in admin.
 - P2 — User accounts, favorites, watch history.
 - P2 — Comments and ratings.
 
@@ -177,3 +177,17 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
   controls remain usable and the document has no horizontal overflow.
 - Verification: test iteration 8 passed 17/17 backend and frontend checks. One live copy and
   bulk-cover job completed for landing `amateur-best`; no LLM calls were made by the test suite.
+
+## Iteration 21 (2026-10) — Official XVideos Deleted-URL Feeds
+- Connected only the two official GZIP exports from the XVideos webmaster catalogue:
+  `xvideos.com-deleted-full.csv.gz` for a one-time historical backfill and
+  `xvideos.com-deleted-week.csv.gz` for daily reconciliation.
+- `XVideosDeadCleaner` now streams GZIP input and processes 5,000 URLs at a time through a
+  temporary MariaDB table, soft-hiding exact local matches only. It uses a MariaDB advisory lock,
+  accepts only the official per-mode URL, rejects lookalike hosts, and never deletes records.
+- Admin shows the read-only official URLs with separate **Clean 7-day deleted** and guarded
+  **Full backfill** actions. The nightly `dead-cleanup` job at 04:15 UTC is hard-wired to the
+  7-day mode; the full historical process was started once in the background on 2026-10-09.
+- Verification: test iteration 9 passed 15/15. Both CDN assets passed a one-byte range probe;
+  no large feed was downloaded during automated tests. A post-review host-boundary fix was
+  regression-tested (15/15 pass).

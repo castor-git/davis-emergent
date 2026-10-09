@@ -1,0 +1,26 @@
+{
+  "summary": "Iteration 9 — Official XVideos deleted-URL feed wiring (full + 7-day GZIP). 15/15 pytest tests green. Confirmed: PHP config exposes the exact official URLs (xvideos.com-deleted-full.csv.gz and xvideos.com-deleted-week.csv.gz); both assets reachable via HTTP range probe (status 206, Content-Type octet-stream/gzip); XVideosDeadCleaner constants + mode→URL mapping verified via reflection (week→WEEK_FEED, full→FULL_FEED, invalid mode throws InvalidArgumentException); normalizeUrl accepts https://www.xvideos.com/video12345/foo and rejects evil.com, relative path, and bare root; /app/.emergent/crons.yml has exactly 4 cron entries with a single dead-cleanup at '15 4 * * *' pointing to /api/cron/dead-cleanup with explicit '7-day' description; unauthenticated POST /api/cron/dead-cleanup returns 401 {ok:false,error:unauthorized} and bad-bearer also returns 401 (no download triggered). Admin dashboard (admin:admin123) renders both URLs as readonly inputs with data-testids cfg-deleted-feed-xvideos / cfg-deleted-full-feed-xvideos; both cleanup forms rendered: cleanup-dead-xvideos posts mode=week, cleanup-dead-full-xvideos posts mode=full (regex-verified in HTML, forms NOT submitted). 390px mobile viewport: scrollWidth=clientWidth=390 (zero horizontal overflow), both cleanup buttons visible. PHP lint passes for all 6 changed files. NO feed was downloaded/decompressed; NO authenticated cron or admin cleanup was triggered.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_iteration9_deleted_feeds.py",
+    "/app/test_reports/pytest/iter9.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "XVideosDeadCleaner::feedUrl uses hash_equals against the per-mode allowlist (FULL_FEED/WEEK_FEED) — prevents a tampered sources.config from redirecting the stream to a non-official URL. Good.",
+    "CronController::deadCleanup is hard-wired to runAsync('week') — correct; the daily cron can never accidentally pull the full feed even if the POST body is tampered with.",
+    "AdminController::cleanupDeadVideos coerces $_POST['mode'] with ternary: anything !== 'full' falls back to 'week' — safe default, aligns with validateMode allow-list.",
+    "runAsync shells out via exec('nohup php bin/cleanup_dead.php MODE &') with escapeshellarg on each argument — argv injection safe.",
+    "normalizeUrl uses str_ends_with($host, 'xvideos.com') — matches www.xvideos.com and xvideos.com but would ALSO match e.g. 'evilxvideos.com'. Consider '=== xvideos.com' OR regex with a leading-dot/boundary check for defense-in-depth. NOT exploitable today (feed is pulled from the official HTTPS endpoint over hash_equals-locked URL), but worth tightening.",
+    "crons.yml contains 4 entries (live-import, daily-suggest, weekly-digest, dead-cleanup), well under the 5-entry cap. Description of dead-cleanup explicitly says '7-day deleted-URL feed'."
+  ],
+  "updated_files": ["/app/backend/tests/test_iteration9_deleted_feeds.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin admin/admin123 (HTTP Basic) from /app/memory/test_credentials.md. CRON bearer intentionally NOT used — authenticated POST would start a real background download.",
+  "seed_data_creation": "None. No feed downloaded, no DB mutated.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reuse /app/backend/tests/test_iteration9_deleted_feeds.py as a regression suite. All checks are safe: only an HTTP range (bytes=0-0) probe hits the CDN, and the only cron hit is unauthenticated (expects 401). Do NOT send a valid Bearer to /api/cron/dead-cleanup and do NOT POST /admin/source/cleanup-dead — both start a real background GZIP stream.",
+  "rca of the issue": "N/A — no issues found."
+}

@@ -162,7 +162,8 @@ class XVideosDeadCleaner {
         $parts = parse_url(trim($raw));
         $host = strtolower((string)($parts['host'] ?? ''));
         $path = '/' . ltrim((string)($parts['path'] ?? ''), '/');
-        if (($parts['scheme'] ?? '') === '' || !str_ends_with($host, 'xvideos.com') || $path === '/') {
+        $officialHost = $host === 'xvideos.com' || str_ends_with($host, '.xvideos.com');
+        if (($parts['scheme'] ?? '') === '' || !$officialHost || $path === '/') {
             return null;
         }
         return 'https://' . $host . rtrim($path, '/');
