@@ -1,0 +1,27 @@
+{
+  "summary": "Full backend + spot frontend test for AI cover generation (Gemini Nano Banana via sidecar). 17/17 pytest tests passed including live AI generation (direct sidecar + admin flow for landing id=2). UI verified via Playwright: Generate AI cover button, og preview image (naturalWidth=1376), og image input all render on /admin/landings/edit?id=2 with correct data-testids and the generated cover loads from /generated/.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ai_covers.py",
+    "/app/test_reports/pytest/ai_covers.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ai_image.py uses hmac.compare_digest and Pydantic min_length validation — good.",
+    "server.py registers ai_router before catch-all proxy — correct order.",
+    "CoverGenerator.php calls deleteOld() and updates landings.og_image (verified via code read and DB)."
+  ],
+  "updated_files": ["/app/backend/tests/test_ai_covers.py"],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "Admin admin/admin123; CRON secret from backend/.env; DB dav/davpass",
+  "seed_data_creation": "One AI image generated via admin for landing id=2 (/generated/landing-2-4bd44d61.jpg). One direct sidecar generation (not persisted). Total 2 Emergent LLM calls as instructed.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Landing 1 and 2 both have covers now. Avoid regenerating to save credits. test_ai_covers.py covers sidecar auth, admin form, generation happy/error paths, static serving, public og meta absolute URL, cron hook, and regression smoke.",
+  "rca of the issue": "N/A — all tests pass."
+}

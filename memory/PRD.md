@@ -38,7 +38,7 @@ Build DAVISPORN, a responsive adult video aggregation website inspired by porndi
 
 ## Backlog / P1
 - P1 — Upornia CSV feed: user has not supplied a feed URL yet (adapter ready, source disabled).
-- P1 — Gemini AI integration (use-case still unclarified: auto-tagging / descriptions / SEO copy) — use integration_expert + Emergent LLM key.
+- P1 — Gemini AI text (auto-tagging / descriptions / SEO copy) — covers are done; text use-case still unclarified.
 - P1 — `EMERGENT_EMAIL_KEY` still blank → weekly digest logs but doesn't send.
 - P2 — XVideos "deleted urls" feed → remove dead videos.
 - P2 — User accounts, favorites, watch history.
@@ -149,3 +149,10 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - `backend/server.py`: `upstream` used only inside `try`; unused import dropped.
 - Frontend (unused React shell, still linted): `App.js` effect without stale closure + no console; `use-toast.js` reducer split into `dismissToasts`/`removeToasts` with default branch, effect deps `[setState]`; `proxy.js`/`craco.config.js` logs guarded by `NODE_ENV`.
 - Test iteration 6: 26/26 + 19/19 backend PASS, UI smoke PASS.
+
+## Iteration 19 (2026-06) — AI landing covers (Gemini Nano Banana)
+- Python layer became an **AI sidecar**: `backend/ai_image.py` exposes `POST /api/ai/image` (header `X-Internal-Secret` = `WEBHOOK_CRON_SECRET`), uses `emergentintegrations` `LlmChat` with `gemini-3.1-flash-image-preview` (modalities image+text) and the Emergent universal key (`EMERGENT_LLM_KEY` in `backend/.env`). Returns base64 + mime.
+- PHP `Support/CoverGenerator.php`: safe "premium dark" abstract poster prompt with the landing title + "DAVISPORN · curated collection" caption; saves to `public/generated/landing-{id}-{hash}.{ext}`, deletes previous generated file, sets `landings.og_image`. `generateMissing(3)` auto-covers drafts (`active=0`, empty og_image) in the daily-suggest cron.
+- Admin: `POST /admin/landings/cover` + "✨ Generate AI cover (Gemini)" button, cover preview and flash in the landing edit form (`l-generate-cover`, `l-og-preview`, `landing-flash`). `og:image`/`twitter:image` made absolute for local paths. Generation ≈ 8–30 s.
+- Resilience: `bootstrap.sh` now verifies PHP extensions (pdo_mysql/curl/mbstring), waits for foreign apt locks (`DPkg::Lock::Timeout`) and retries instead of dying — root cause of the "could not find driver" after the last pod restart.
+- Test iteration 7: 17/17 PASS (incl. live generation for landing 1 & 2) + Playwright UI check.
