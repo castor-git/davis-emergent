@@ -1,6 +1,7 @@
 <?php use App\Core\View; $p = $prefill; ?>
 <h1><?= $p['id'] ? 'Edit landing page' : 'Create landing page' ?></h1>
 <p class="muted"><?= $p['id'] ? 'Update the curated collection.' : 'Turn a search intent into a curated collection page reachable at /l/{slug}.' ?></p>
+<?php if (!empty($_GET['msg'])): ?><div class="flash" data-testid="landing-flash" style="background:#15181f;border:1px solid var(--border);border-left:3px solid var(--accent);padding:10px 14px;border-radius:8px;margin:0 0 14px;font-size:.9rem"><?= View::e($_GET['msg']) ?></div><?php endif; ?>
 
 <form method="post" action="/admin/landings/save" data-testid="landing-form" style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:900px">
   <input type="hidden" name="id" value="<?= (int)$p['id'] ?>">
@@ -41,6 +42,14 @@
       </label>
       <label style="display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">OG image URL
         <input name="og_image" value="<?= View::e($p['og_image']) ?>" data-testid="l-og-image" placeholder="Defaults to first video thumbnail" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px">
+        <?php if ($p['og_image']): ?>
+          <img src="<?= View::e($p['og_image']) ?>" alt="Current cover" data-testid="l-og-preview" style="margin-top:6px;width:100%;max-width:320px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;border:1px solid var(--border)">
+        <?php endif; ?>
+        <?php if ($p['id']): ?>
+          <button type="submit" form="cover-form" class="btn-ghost" style="margin-top:6px;align-self:flex-start;padding:6px 12px;font-size:.78rem;text-transform:none;letter-spacing:0" data-testid="l-generate-cover" onclick="this.textContent='Generating… (up to 1 min)';this.style.opacity=.6">✨ Generate AI cover (Gemini)</button>
+        <?php else: ?>
+          <span class="muted" style="font-size:.72rem;text-transform:none;font-weight:500">Save the landing first to unlock AI cover generation.</span>
+        <?php endif; ?>
       </label>
       <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Meta description (<= 160 chars)
         <textarea name="meta_description" rows="2" maxlength="300" data-testid="l-meta-desc" placeholder="Defaults to intro copy trimmed to 160 chars" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit"><?= View::e($p['meta_description']) ?></textarea>
@@ -97,6 +106,9 @@
     <button class="btn-primary" data-testid="l-save"><?= $p['id']?'Save changes':'Publish landing' ?></button>
   </div>
 </form>
+<?php if ($p['id']): ?>
+<form id="cover-form" method="post" action="/admin/landings/cover" style="display:none"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"></form>
+<?php endif; ?>
 
 <script>
 // Toggle chip styling on checkbox click

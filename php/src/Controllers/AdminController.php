@@ -106,6 +106,19 @@ class AdminController {
         exit;
     }
 
+    public function generateCover(): void {
+        $this->auth();
+        $id = (int)($_POST['id'] ?? 0);
+        try {
+            $path = \App\Support\CoverGenerator::generate($id);
+            $msg = 'Cover generated: ' . $path;
+        } catch (\Throwable $e) {
+            $msg = 'Cover generation failed: ' . $e->getMessage();
+        }
+        header('Location: /admin/landings/edit?id=' . $id . '&msg=' . urlencode($msg));
+        exit;
+    }
+
     public function deleteLanding(): void {
         $this->auth();
         \App\Models\Landing::delete((int)($_POST['id'] ?? 0));

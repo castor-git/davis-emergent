@@ -43,6 +43,8 @@ class CronController {
 
         try { \App\Support\LandingSuggester::run(3); }
         catch (\Throwable $e) { error_log('landing suggester: ' . $e->getMessage()); }
+        // Give fresh drafts an AI cover so they are share-ready the moment admin publishes them
+        \App\Support\CoverGenerator::generateMissing(3);
     }
 
     public function weeklyDigest(): void {

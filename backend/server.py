@@ -7,9 +7,12 @@ import os
 import httpx
 from fastapi import FastAPI, Request, Response
 
+from ai_image import router as ai_router
+
 PHP_UPSTREAM = os.environ.get("PHP_UPSTREAM", "http://127.0.0.1:9000")
 
 app = FastAPI(title="DAVISPORN proxy")
+app.include_router(ai_router)  # must be registered before the catch-all proxy route
 
 HOP_BY_HOP = {"connection", "keep-alive", "proxy-authenticate", "proxy-authorization",
               "te", "trailer", "transfer-encoding", "upgrade", "content-encoding",

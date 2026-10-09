@@ -27,6 +27,7 @@ class LandingController {
         $intro = trim((string)$l['intro']);
         $seoDesc = $l['meta_description'] ?: (mb_substr(strip_tags($intro), 0, 160) ?: ($displayTitle . ' — curated adult video collection on DAVISPORN.'));
         $ogImage = $l['og_image'] ?: ($data['items'][0]['thumbnail'] ?? '');
+        if ($ogImage && str_starts_with($ogImage, '/')) $ogImage = $scheme . '://' . $host . $ogImage;
         $e = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $head = "\n<meta property=\"og:type\" content=\"video.other\">\n"
               . "<meta property=\"og:site_name\" content=\"DAVISPORN\">\n"
