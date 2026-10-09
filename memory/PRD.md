@@ -38,9 +38,9 @@ Build DAVISPORN, a responsive adult video aggregation website inspired by porndi
 
 ## Backlog / P1
 - P1 — Upornia CSV feed: user has not supplied a feed URL yet (adapter ready, source disabled).
-- P1 — Gemini AI text (auto-tagging / descriptions / SEO copy) — covers are done; text use-case still unclarified.
+- P1 — Import dashboard: live import log plus per-source new-video charts in admin.
 - P1 — `EMERGENT_EMAIL_KEY` still blank → weekly digest logs but doesn't send.
-- P2 — XVideos "deleted urls" feed → remove dead videos.
+- P1 — XVideos deleted-URL feed: cleanup engine is ready, but its source HTTPS URL must be configured.
 - P2 — User accounts, favorites, watch history.
 - P2 — Comments and ratings.
 
@@ -156,3 +156,24 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
 - Admin: `POST /admin/landings/cover` + "✨ Generate AI cover (Gemini)" button, cover preview and flash in the landing edit form (`l-generate-cover`, `l-og-preview`, `landing-flash`). `og:image`/`twitter:image` made absolute for local paths. Generation ≈ 8–30 s.
 - Resilience: `bootstrap.sh` now verifies PHP extensions (pdo_mysql/curl/mbstring), waits for foreign apt locks (`DPkg::Lock::Timeout`) and retries instead of dying — root cause of the "could not find driver" after the last pod restart.
 - Test iteration 7: 17/17 PASS (incl. live generation for landing 1 & 2) + Playwright UI check.
+
+## Iteration 20 (2026-10) — Bulk Covers, Dead-Video Cleanup, AI Landing Descriptions
+- **Bulk Covers**: Admin landing table adds `Generate AI covers` to the existing multi-select
+  toolbar. The selected, still-existing landing IDs are queued through
+  `CoverGenerator::generateManyAsync()` and `bin/generate_covers.php`, keeping the dashboard
+  responsive while Gemini produces every chosen cover. The table exposes a cover-state indicator.
+- **Dead Video Cleanup**: `videos` has idempotent `is_available` and `unavailable_at` fields.
+  `XVideosDeadCleaner` consumes a configured HTTPS feed of removed XVideos URLs/IDs, marks only
+  matching XVideos rows unavailable, recounts taxonomies, and leaves public browse, detail,
+  suggestions, landing collections, and sitemap free of unavailable entries. A 04:15 UTC
+  `dead-cleanup` cron acknowledges immediately then runs the cleanup in the background.
+  Admin provides the deleted-feed URL input and a manual cleanup trigger. With no source URL,
+  the job safely skips without hiding videos.
+- **AI Descriptions**: `backend/ai_copy.py` adds a shared-secret Gemini 3.1 Pro sidecar endpoint
+  using streamed LLM output and strict JSON parsing. `LandingCopyGenerator` persists an
+  English editorial intro and meta description. Existing landing forms offer the one-click
+  `Generate AI intro + meta description` action; the daily suggestion job fills missing copy.
+- Admin tables are responsive at 390px: nonessential table columns collapse while all primary
+  controls remain usable and the document has no horizontal overflow.
+- Verification: test iteration 8 passed 17/17 backend and frontend checks. One live copy and
+  bulk-cover job completed for landing `amateur-best`; no LLM calls were made by the test suite.
