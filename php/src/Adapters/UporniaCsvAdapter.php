@@ -73,6 +73,11 @@ class UporniaCsvAdapter implements SourceAdapter {
             $this->splitList((string)$video->tags),
             $this->splitList((string)$video->models)
         );
+        $actors = $this->splitList((string)$video->models);
+        $uploader = $this->cleanText((string)$video->user);
+        if (!$actors && $uploader !== '') {
+            $actors = [$uploader];
+        }
         $published = trim((string)$video->post_date);
         return [
             'source' => $this->slug(),
@@ -91,6 +96,8 @@ class UporniaCsvAdapter implements SourceAdapter {
             'published_at' => $this->publishedAt($published),
             'categories' => $categories,
             'tags' => array_slice(array_values(array_unique($tags)), 0, 30),
+            'actors' => array_slice(array_values(array_unique($actors)), 0, 8),
+            'studios' => $this->splitList((string)$video->studio),
         ];
     }
 

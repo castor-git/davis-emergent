@@ -57,6 +57,34 @@ class Schema {
             INDEX idx_tag (tag_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+        $db->exec("CREATE TABLE IF NOT EXISTS actors (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            slug VARCHAR(120) NOT NULL UNIQUE,
+            name VARCHAR(120) NOT NULL,
+            video_count INT NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->exec("CREATE TABLE IF NOT EXISTS studios (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            slug VARCHAR(120) NOT NULL UNIQUE,
+            name VARCHAR(120) NOT NULL,
+            video_count INT NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->exec("CREATE TABLE IF NOT EXISTS video_actors (
+            video_id INT NOT NULL,
+            actor_id INT NOT NULL,
+            PRIMARY KEY (video_id, actor_id),
+            INDEX idx_actor (actor_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $db->exec("CREATE TABLE IF NOT EXISTS video_studios (
+            video_id INT NOT NULL,
+            studio_id INT NOT NULL,
+            PRIMARY KEY (video_id, studio_id),
+            INDEX idx_studio (studio_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
         $db->exec("CREATE TABLE IF NOT EXISTS sources (
             slug VARCHAR(64) PRIMARY KEY,
             label VARCHAR(128) NOT NULL,

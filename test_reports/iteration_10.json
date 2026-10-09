@@ -1,0 +1,29 @@
+{
+  "summary": "Iteration 10 — Upornia XML live-contract + lock + DB + admin UI regression. 62/62 PHP assertions green via /app/php/tests/test_iteration10_upornia.php. One bounded live fetch (UporniaCsvAdapter::fetch(3)) returned three normalized records with numeric source_video_id, non-empty titles, HTTPS page URLs, extracted iframe src embed URLs, duration>=180, quality=HD, numeric rating, YYYY-MM-DD HH:MM:SS post_date, and category arrays. Reflection tests confirm validateFeedUrl rejects http/wrong-host/sub.upornia.com/wrong-path/ftp, and UporniaDeletedCleaner::validateUrl rejects http/wrong-host/wrong-path/main-feed-path. SourceManager::limitFor caps upornia_csv at 10000 (DB import_limit=10000). DB state verified: upornia_csv enabled=1, config.import_limit=10000, config.feed_url is official HTTPS /admin/feeds/embed/, config.deleted_feed_url is official HTTPS /api/videos_feed2.php, last_status='OK — inserted 9980, updated 20, hidden 0 deleted', videos row count = 10000, all is_available=1, 0 rows with duration<180, 0 rows non-HD, category links populated. Lock behavior: holding GET_LOCK('upornia_import') on a secondary PDO connection caused SourceManager::import('upornia_csv',1) to return ok=true/inserted=0/updated=0 with message 'SKIPPED — another Upornia import is already running' AND sources.last_status was NOT mutated (verified before/after); lock released cleanly after RELEASE_LOCK. Deleted feed reachable via bounded Range request (bytes=0-2048): HTTP 200, header 'ID;Website link' uses the required semicolon separator. Admin UI (Basic admin:admin123) shows: 'Upornia XML Feed' label, ENABLED pill, feed URL input prefilled with the official HTTPS endpoint, readonly deleted-feed input (data-testid cfg-deleted-feed-upornia), import_limit input value=10000 max=10000, Import button visible (NOT clicked). Mobile 390px: documentElement.scrollWidth = clientWidth = 390 (zero horizontal overflow), Import button remains visible. PHP lint clean on all 6 reference files. Home (/) 200, /api/health 200, /admin 401 unauth / 200 auth.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/php/tests/test_iteration10_upornia.php",
+    "/app/test_reports/pytest/iter10_upornia_results.json"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "UporniaCsvAdapter::validateFeedUrl strictly enforces scheme=https, host=='upornia.com' (exact match, so 'evilupornia.com' / 'sub.upornia.com' both rejected), and path=='/admin/feeds/embed/'. Good — stronger than the str_ends_with pattern flagged in iteration 9 for the xvideos cleaner.",
+    "UporniaDeletedCleaner::validateUrl enforces scheme/host/path triple with the same strict equality — tampered sources.config cannot redirect the deleted-feed stream.",
+    "SourceManager::import acquires GET_LOCK('upornia_import') with timeout=0 and returns ok=true + inserted=0 + updated=0 when the lock is held; crucially the SKIPPED branch does NOT run the 'UPDATE sources SET last_status=…' statement, so a parallel skipped import can never overwrite the real import's active status (race-condition fix is correct and verified).",
+    "The live Upornia XML feed emits page_url on the 'videoupornia.com' partner host (e.g. https://videoupornia.com/videos/3510097/…). Not an app bug (ID + embed come from the same provider), but worth noting: source_video_id is extracted from <id>, so uniqueness is preserved even though the public URL host differs from the feed host.",
+    "Deleted-feed CSV header is 'ID;Website link' (capitalised 'ID', not 'id'). UporniaDeletedCleaner only reads column 0 as a numeric ID and skips non-digit rows via ctype_digit — so the header line is skipped naturally and no case-sensitive column lookup is required. Robust.",
+    "SourceManager::importAsync writes last_status='RUNNING…' BEFORE forking the background import, but the SKIPPED path above intentionally skips this write — correct, prevents the race.",
+    "Admin dashboard max-attribute on import_limit input is dynamically '10000' only for upornia_csv (view line 48) — matches SourceManager::limitFor's 10000 cap and prevents operators from entering out-of-range values."
+  ],
+  "updated_files": [
+    "/app/php/tests/test_iteration10_upornia.php"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "admin / admin123 (HTTP Basic) from /app/memory/test_credentials.md. MariaDB dav/davpass used for a secondary PDO connection to simulate the lock race.",
+  "seed_data_creation": "None. DB state read-only. One bounded upstream fetch of 3 XML records (adapter) and one Range probe of the deleted feed. No import triggered, no sources.last_status mutated.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Reuse /app/php/tests/test_iteration10_upornia.php as a regression suite: run with `cd /app/php && php tests/test_iteration10_upornia.php`. All checks are safe: no bulk import, no cleaner run, no admin POST. The lock-race test releases its lock in the same script. If the Upornia feed goes down upstream, only the final 'Live Upornia fetch(3)' block (10 assertions × 3 records = 30) will fail — the other 32 assertions are offline/reflection/DB-only.",
+  "rca of the issue": "N/A — no defects found."
+}

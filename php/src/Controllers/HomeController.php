@@ -13,7 +13,7 @@ class HomeController {
         // Pinned categories override the implicit top category
         $boost = $pins[0] ?? $topCat;
 
-        $data = Cache::remember('home:v1', 300, function () {
+        $data = Cache::remember('home:v2', 300, function () {
             return [
                 'featured' => Video::paginate(['featured'=>1,'sort'=>'popular'], 1, 12)['items'],
                 'popular' => Video::paginate(['sort'=>'popular'], 1, 12)['items'],

@@ -73,6 +73,7 @@ class SourceManager {
                     $updated++;
                 } else { $inserted++; }
                 self::syncTaxonomy($vid, $v['categories'] ?? [], $v['tags'] ?? []);
+                self::syncCredits($vid, $v['actors'] ?? [], $v['studios'] ?? []);
             }
             $hidden = 0;
             if ($slug === 'upornia_csv') {
@@ -120,6 +121,8 @@ class SourceManager {
         $db = App::$db;
         $db->exec("UPDATE categories c SET video_count = (SELECT COUNT(*) FROM video_categories vc JOIN videos v ON v.id=vc.video_id WHERE vc.category_id = c.id AND v.is_available=1)");
         $db->exec("UPDATE tags t SET video_count = (SELECT COUNT(*) FROM video_tags vt JOIN videos v ON v.id=vt.video_id WHERE vt.tag_id = t.id AND v.is_available=1)");
+        $db->exec("UPDATE actors a SET video_count = (SELECT COUNT(*) FROM video_actors va JOIN videos v ON v.id=va.video_id WHERE va.actor_id=a.id AND v.is_available=1)");
+        $db->exec("UPDATE studios s SET video_count = (SELECT COUNT(*) FROM video_studios vs JOIN videos v ON v.id=vs.video_id WHERE vs.studio_id=s.id AND v.is_available=1)");
         // Feeds carry no "featured" flag — promote the 12 most-viewed recent videos with an embed
         $db->exec("UPDATE videos SET is_featured=0 WHERE is_featured=1");
         $db->exec("UPDATE videos SET is_featured=1 WHERE embed_url<>'' AND is_available=1 ORDER BY views DESC, published_at DESC LIMIT 12");
@@ -137,6 +140,38 @@ class SourceManager {
         $db->exec("UPDATE sources SET enabled=0, last_status='Purged demo data' WHERE slug='demo'");
         \App\Core\Cache::forget();
         return (int)$n;
+    }
+
+    protected static function syncCredits(int $videoId, array $actors, array $studios): void {
+        $db = App::$db;
+        $db->prepare('DELETE FROM video_actors WHERE video_id=?')->execute([$videoId]);
+        $db->prepare('DELETE FROM video_studios WHERE video_id=?')->execute([$videoId]);
+        self::syncCreditType($videoId, $actors, 'actors', 'video_actors', 'actor_id');
+        self::syncCreditType($videoId, $studios, 'studios', 'video_studios', 'studio_id');
+    }
+
+    protected static function syncCreditType(
+        int $videoId,
+        array $credits,
+        string $table,
+        string $pivot,
+        string $foreignKey
+    ): void {
+        $db = App::$db;
+        foreach (array_slice(array_values(array_unique($credits)), 0, 8) as $name) {
+            $name = mb_substr(trim((string)$name), 0, 120);
+            if ($name === '') {
+                continue;
+            }
+            $slug = self::slugify($name);
+            $db->prepare("INSERT IGNORE INTO {$table} (slug, name) VALUES (?, ?)")
+                ->execute([$slug, $name]);
+            $statement = $db->prepare("SELECT id FROM {$table} WHERE slug=?");
+            $statement->execute([$slug]);
+            $creditId = (int)$statement->fetchColumn();
+            $db->prepare("INSERT IGNORE INTO {$pivot} (video_id, {$foreignKey}) VALUES (?, ?)")
+                ->execute([$videoId, $creditId]);
+        }
     }
 
     public static function slugify(string $s): string {

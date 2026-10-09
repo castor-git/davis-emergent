@@ -3,6 +3,7 @@ namespace App\Controllers;
 
 use App\Core\{View, App};
 use App\Models\{Video, Taxonomy};
+use App\Models\Credit;
 
 class BrowseController {
     public function videos(array $params = []): void {
@@ -47,18 +48,45 @@ class BrowseController {
         View::render('pages/browse', $data);
     }
 
+    public function actor(array $p): void {
+        $actor = Credit::actorBySlug($p['slug']);
+        if (!$actor) {
+            http_response_code(404);
+            View::render('pages/404', ['title' => 'Not Found']);
+            return;
+        }
+        $this->renderCreditListing($actor, 'actor', 'Aktorzy');
+    }
+
+    public function studio(array $p): void {
+        $studio = Credit::studioBySlug($p['slug']);
+        if (!$studio) {
+            http_response_code(404);
+            View::render('pages/404', ['title' => 'Not Found']);
+            return;
+        }
+        $this->renderCreditListing($studio, 'studio', 'Wytwórnia');
+    }
+
     public function video(array $p): void {
         $video = Video::bySlug($p['slug']);
         if (!$video) { http_response_code(404); View::render('pages/404',['title'=>'Not Found']); return; }
         Video::incrementViews((int)$video['id']);
         $cats = Video::categoriesFor((int)$video['id']);
         $tags = Video::tagsFor((int)$video['id']);
+        $actors = Video::actorsFor((int)$video['id']);
+        $studios = Video::studiosFor((int)$video['id']);
         // Personalization signal — remember which categories this visitor consumes
         \App\Support\Personalization::record(array_column($cats, 'slug'));
         $related = Video::related((int)$video['id'], 8);
         View::render('pages/video', [
             'title' => $video['title'],
-            'video' => $video, 'cats' => $cats, 'tags_list' => $tags, 'related' => $related,
+            'video' => $video,
+            'cats' => $cats,
+            'tags_list' => $tags,
+            'actors' => $actors,
+            'studios' => $studios,
+            'related' => $related,
         ]);
     }
 
@@ -83,5 +111,17 @@ class BrowseController {
         $q = trim((string)($_GET['q'] ?? ''));
         if (strlen($q) < 2) { View::json(['items'=>[]]); return; }
         View::json(['items' => Video::suggest($q)]);
+    }
+
+    private function renderCreditListing(array $credit, string $type, string $label): void {
+        $_GET[$type] = $credit['slug'];
+        $filters = $_GET;
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $data = Video::paginate($filters, $page, (int)App::config('per_page'));
+        $data['filters'] = $filters;
+        $data['categories'] = Taxonomy::popularCategories(30);
+        $data['tags'] = Taxonomy::popularTags(40);
+        $data['title'] = $label . ': ' . $credit['name'];
+        View::render('pages/browse', $data);
     }
 }

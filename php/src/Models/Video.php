@@ -25,6 +25,16 @@ class Video {
             $join .= " JOIN video_tags vt ON vt.video_id = v.id JOIN tags t ON t.id = vt.tag_id ";
             $where[] = "t.slug = :tag"; $params[':tag'] = $filters['tag'];
         }
+        if (!empty($filters['actor'])) {
+            $join .= ' JOIN video_actors va ON va.video_id=v.id JOIN actors a ON a.id=va.actor_id ';
+            $where[] = 'a.slug = :actor';
+            $params[':actor'] = $filters['actor'];
+        }
+        if (!empty($filters['studio'])) {
+            $join .= ' JOIN video_studios vs ON vs.video_id=v.id JOIN studios s ON s.id=vs.studio_id ';
+            $where[] = 's.slug = :studio';
+            $params[':studio'] = $filters['studio'];
+        }
         $sort = match ($filters['sort'] ?? 'popular') {
             'newest' => 'v.published_at DESC',
             'rating' => 'v.rating DESC',
@@ -46,7 +56,13 @@ class Video {
         $st->bindValue(':lim', $per, \PDO::PARAM_INT);
         $st->bindValue(':off', ($page-1)*$per, \PDO::PARAM_INT);
         $st->execute();
-        return ['items'=>$st->fetchAll(), 'total'=>$total, 'page'=>$page, 'per'=>$per, 'pages'=>max(1, (int)ceil($total/$per))];
+        return [
+            'items' => self::enrichCards($st->fetchAll()),
+            'total' => $total,
+            'page' => $page,
+            'per' => $per,
+            'pages' => max(1, (int)ceil($total / $per)),
+        ];
     }
 
     public static function bySlug(string $slug): ?array {
@@ -65,6 +81,22 @@ class Video {
         $st->execute([$id]); return $st->fetchAll();
     }
 
+    public static function actorsFor(int $id): array {
+        $statement = App::$db->prepare(
+            'SELECT a.* FROM actors a JOIN video_actors va ON va.actor_id=a.id WHERE va.video_id=?'
+        );
+        $statement->execute([$id]);
+        return $statement->fetchAll();
+    }
+
+    public static function studiosFor(int $id): array {
+        $statement = App::$db->prepare(
+            'SELECT s.* FROM studios s JOIN video_studios vs ON vs.studio_id=s.id WHERE vs.video_id=?'
+        );
+        $statement->execute([$id]);
+        return $statement->fetchAll();
+    }
+
     public static function related(int $id, int $limit = 8): array {
         $st = App::$db->prepare("
             SELECT v.*, COUNT(*) as score FROM videos v
@@ -75,7 +107,7 @@ class Video {
         $st->bindValue(2, $id, \PDO::PARAM_INT);
         $st->bindValue(3, $limit, \PDO::PARAM_INT);
         $st->execute();
-        return $st->fetchAll();
+        return self::enrichCards($st->fetchAll());
     }
 
     public static function incrementViews(int $id): void {
@@ -88,5 +120,50 @@ class Video {
         $st->bindValue(2, $limit, \PDO::PARAM_INT);
         $st->execute();
         return $st->fetchAll();
+    }
+
+    public static function enrichCards(array $items): array {
+        if (!$items) {
+            return [];
+        }
+        $ids = array_values(array_unique(array_map('intval', array_column($items, 'id'))));
+        $marks = implode(',', array_fill(0, count($ids), '?'));
+        $db = App::$db;
+        $actors = self::creditsByVideo(
+            "SELECT va.video_id, a.slug, a.name FROM video_actors va
+             JOIN actors a ON a.id=va.actor_id WHERE va.video_id IN ({$marks}) ORDER BY a.name",
+            $ids
+        );
+        $studios = self::creditsByVideo(
+            "SELECT vs.video_id, s.slug, s.name FROM video_studios vs
+             JOIN studios s ON s.id=vs.studio_id WHERE vs.video_id IN ({$marks}) ORDER BY s.name",
+            $ids
+        );
+        $tags = self::creditsByVideo(
+            "SELECT vt.video_id, t.slug, t.name FROM video_tags vt
+             JOIN tags t ON t.id=vt.tag_id WHERE vt.video_id IN ({$marks}) ORDER BY t.name",
+            $ids
+        );
+        foreach ($items as &$item) {
+            $id = (int)$item['id'];
+            $item['actors'] = array_slice($actors[$id] ?? [], 0, 3);
+            $item['studios'] = array_slice($studios[$id] ?? [], 0, 2);
+            $item['card_tags'] = array_slice($tags[$id] ?? [], 0, 3);
+        }
+        unset($item);
+        return $items;
+    }
+
+    private static function creditsByVideo(string $sql, array $ids): array {
+        $statement = App::$db->prepare($sql);
+        $statement->execute($ids);
+        $grouped = [];
+        foreach ($statement->fetchAll() as $row) {
+            $grouped[(int)$row['video_id']][] = [
+                'slug' => $row['slug'],
+                'name' => $row['name'],
+            ];
+        }
+        return $grouped;
     }
 }

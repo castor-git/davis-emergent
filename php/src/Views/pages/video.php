@@ -49,6 +49,38 @@
         <?php foreach ($tags_list as $t): ?><a class="chip" href="/tag/<?= View::e($t['slug']) ?>">#<?= View::e($t['name']) ?></a><?php endforeach; ?>
       </div>
     </div>
+    <?php if (!empty($actors)): ?>
+      <div class="taxo" data-testid="detail-actors">
+        <h3>Aktorzy</h3>
+        <div class="chips">
+          <?php foreach ($actors as $actor): ?>
+            <a
+              class="chip"
+              href="/actor/<?= View::e($actor['slug']) ?>"
+              data-testid="detail-actor-<?= View::e($actor['slug']) ?>"
+            >
+              <?= View::e($actor['name']) ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
+    <?php if (!empty($studios)): ?>
+      <div class="taxo" data-testid="detail-studios">
+        <h3>Wytwórnia</h3>
+        <div class="chips">
+          <?php foreach ($studios as $studio): ?>
+            <a
+              class="chip"
+              href="/studio/<?= View::e($studio['slug']) ?>"
+              data-testid="detail-studio-<?= View::e($studio['slug']) ?>"
+            >
+              <?= View::e($studio['name']) ?>
+            </a>
+          <?php endforeach; ?>
+        </div>
+      </div>
+    <?php endif; ?>
     <?php if (!empty($related)): ?>
     <h3>Related</h3>
     <?php foreach (array_slice($related, 0, 4) as $video): ?>

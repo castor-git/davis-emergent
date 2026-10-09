@@ -100,6 +100,13 @@ h3{font-size:1.05rem}
 .card .info a.title:hover{color:var(--accent-2)}
 .card .meta{display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted);gap:6px}
 .card .meta .rating{color:var(--gold);font-weight:700}
+.credit-row{display:flex;flex-wrap:wrap;gap:4px 6px;margin-top:6px;font-size:.72rem;line-height:1.3;color:var(--muted)}
+.credit-row span{color:#747c89}
+.credit-row a{color:#c8cdd6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.credit-row a:hover{color:var(--accent-2)}
+.card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:7px}
+.card-tags a{color:#aeb5c1;background:#1a1d24;border:1px solid var(--border);border-radius:4px;padding:2px 5px;font-size:.66rem;line-height:1.2}
+.card-tags a:hover{border-color:var(--accent);color:#fff}
 
 /* Categories/tags cloud */
 .chips{display:flex;flex-wrap:wrap;gap:8px}

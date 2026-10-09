@@ -23,6 +23,8 @@ $router->get('/api/suggest', fn() => (new BrowseController())->suggest());
 $router->get('/video/{slug}', fn($p) => (new BrowseController())->video($p));
 $router->get('/category/{slug}', fn($p) => (new BrowseController())->category($p));
 $router->get('/tag/{slug}', fn($p) => (new BrowseController())->tag($p));
+$router->get('/actor/{slug}', fn($p) => (new BrowseController())->actor($p));
+$router->get('/studio/{slug}', fn($p) => (new BrowseController())->studio($p));
 
 $router->get('/categories', fn() => (new SeoController())->categoriesIndex());
 $router->get('/tags', fn() => (new SeoController())->tagsIndex());

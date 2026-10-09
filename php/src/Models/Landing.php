@@ -129,7 +129,13 @@ class Landing {
         $st->bindValue($i++, $per, \PDO::PARAM_INT);
         $st->bindValue($i, ($page-1)*$per, \PDO::PARAM_INT);
         $st->execute();
-        return ['items'=>$st->fetchAll(), 'total'=>$total, 'page'=>$page, 'per'=>$per, 'pages'=>max(1,(int)ceil($total/$per))];
+        return [
+            'items' => Video::enrichCards($st->fetchAll()),
+            'total' => $total,
+            'page' => $page,
+            'per' => $per,
+            'pages' => max(1, (int)ceil($total / $per)),
+        ];
     }
 
     public static function incrementViews(int $id): void {

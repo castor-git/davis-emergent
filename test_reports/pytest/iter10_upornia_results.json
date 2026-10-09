@@ -1,0 +1,316 @@
+{
+    "pass": 62,
+    "fail": 0,
+    "results": [
+        {
+            "name": "feed-url rejected: http (not https)",
+            "ok": true,
+            "detail": "url=http:\/\/upornia.com\/admin\/feeds\/embed\/"
+        },
+        {
+            "name": "feed-url rejected: wrong host",
+            "ok": true,
+            "detail": "url=https:\/\/evil.com\/admin\/feeds\/embed\/"
+        },
+        {
+            "name": "feed-url rejected: host must equal upornia.com",
+            "ok": true,
+            "detail": "url=https:\/\/sub.upornia.com\/admin\/feeds\/embed\/"
+        },
+        {
+            "name": "feed-url rejected: wrong path",
+            "ok": true,
+            "detail": "url=https:\/\/upornia.com\/api\/videos_feed2.php"
+        },
+        {
+            "name": "feed-url rejected: wrong scheme",
+            "ok": true,
+            "detail": "url=ftp:\/\/upornia.com\/admin\/feeds\/embed\/"
+        },
+        {
+            "name": "feed-url accepts official HTTPS endpoint with query",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "deleted-feed rejected: http",
+            "ok": true,
+            "detail": "url=http:\/\/upornia.com\/api\/videos_feed2.php"
+        },
+        {
+            "name": "deleted-feed rejected: wrong host",
+            "ok": true,
+            "detail": "url=https:\/\/evil.com\/api\/videos_feed2.php"
+        },
+        {
+            "name": "deleted-feed rejected: wrong path",
+            "ok": true,
+            "detail": "url=https:\/\/upornia.com\/api\/other.php"
+        },
+        {
+            "name": "deleted-feed rejected: main-feed path",
+            "ok": true,
+            "detail": "url=https:\/\/upornia.com\/admin\/feeds\/embed\/"
+        },
+        {
+            "name": "deleted-feed accepts official endpoint",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "limitFor caps upornia_csv at 10000",
+            "ok": true,
+            "detail": "DB import_limit is 10000, min(10000, 10000)=10000"
+        },
+        {
+            "name": "limitFor still honors fallback when no DB value",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "upornia_csv source is enabled",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "import_limit=10000 persisted in DB",
+            "ok": true,
+            "detail": "10000"
+        },
+        {
+            "name": "feed_url is official HTTPS XML endpoint",
+            "ok": true,
+            "detail": "https:\/\/upornia.com\/admin\/feeds\/embed\/?source=261072836&only"
+        },
+        {
+            "name": "deleted_feed_url is official HTTPS API endpoint",
+            "ok": true,
+            "detail": "https:\/\/upornia.com\/api\/videos_feed2.php?action=get_deleted&"
+        },
+        {
+            "name": "last_status reports inserted\/updated\/hidden counters",
+            "ok": true,
+            "detail": "OK \u2014 inserted 9980, updated 20, hidden 0 deleted"
+        },
+        {
+            "name": ">=10000 rows persisted for upornia_csv",
+            "ok": true,
+            "detail": "n=10000"
+        },
+        {
+            "name": "all persisted rows currently available (is_available=1)",
+            "ok": true,
+            "detail": "avail=10000 of 10000"
+        },
+        {
+            "name": "no row stored with duration < 180",
+            "ok": true,
+            "detail": "below=0"
+        },
+        {
+            "name": "all rows marked HD",
+            "ok": true,
+            "detail": "non_hd=0"
+        },
+        {
+            "name": "category links were created for upornia rows",
+            "ok": true,
+            "detail": "cat_rows=78147"
+        },
+        {
+            "name": "acquired upornia_import lock on secondary connection",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "import returns ok=true SKIPPED under lock",
+            "ok": true,
+            "detail": "{\"ok\":true,\"inserted\":0,\"updated\":0,\"message\":\"SKIPPED \\u2014 another Upornia import is already running\"}"
+        },
+        {
+            "name": "SKIPPED result message says another import is running",
+            "ok": true,
+            "detail": "SKIPPED \u2014 another Upornia import is already running"
+        },
+        {
+            "name": "sources.last_status is NOT mutated while lock held",
+            "ok": true,
+            "detail": "before=[OK \u2014 inserted 9980, updated 20, hidden 0 deleted] after=[OK \u2014 inserted 9980, updated 20, hidden 0 deleted]"
+        },
+        {
+            "name": "lock is released after RELEASE_LOCK on secondary connection",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "deleted feed reachable (HTTP 2xx)",
+            "ok": true,
+            "detail": "code=200"
+        },
+        {
+            "name": "deleted feed header uses semicolon separator",
+            "ok": true,
+            "detail": "header=ID;Website link"
+        },
+        {
+            "name": "deleted feed header contains id column",
+            "ok": true,
+            "detail": "header=ID;Website link"
+        },
+        {
+            "name": "adapter yielded 3 normalized records",
+            "ok": true,
+            "detail": "got=3"
+        },
+        {
+            "name": "rec#0.source_video_id is numeric string",
+            "ok": true,
+            "detail": "id=3510097"
+        },
+        {
+            "name": "rec#0.title is non-empty",
+            "ok": true,
+            "detail": "Hottest sex movie Chubby crazy watch show"
+        },
+        {
+            "name": "rec#0.page_url is official HTTPS upornia(-partner) URL",
+            "ok": true,
+            "detail": "https:\/\/videoupornia.com\/videos\/3510097\/hottest-sex-movie-chubby-crazy-watch-show\/?source=261072836"
+        },
+        {
+            "name": "rec#0.embed_url extracted from <iframe>",
+            "ok": true,
+            "detail": "https:\/\/videoupornia.com\/embed\/3510097\/?source=261072836"
+        },
+        {
+            "name": "rec#0.duration >=180",
+            "ok": true,
+            "detail": "1107"
+        },
+        {
+            "name": "rec#0.quality === 'HD'",
+            "ok": true,
+            "detail": "HD"
+        },
+        {
+            "name": "rec#0.rating is numeric",
+            "ok": true,
+            "detail": "4.1"
+        },
+        {
+            "name": "rec#0.published_at matches YYYY-MM-DD HH:MM:SS",
+            "ok": true,
+            "detail": "2020-10-30 15:10:01"
+        },
+        {
+            "name": "rec#0.categories is array (normalized list)",
+            "ok": true,
+            "detail": "array"
+        },
+        {
+            "name": "rec#0.source === 'upornia_csv'",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "rec#1.source_video_id is numeric string",
+            "ok": true,
+            "detail": "id=3342129"
+        },
+        {
+            "name": "rec#1.title is non-empty",
+            "ok": true,
+            "detail": "Hello Nurse"
+        },
+        {
+            "name": "rec#1.page_url is official HTTPS upornia(-partner) URL",
+            "ok": true,
+            "detail": "https:\/\/videoupornia.com\/videos\/3342129\/hello-nurse\/?source=261072836"
+        },
+        {
+            "name": "rec#1.embed_url extracted from <iframe>",
+            "ok": true,
+            "detail": "https:\/\/videoupornia.com\/embed\/3342129\/?source=261072836"
+        },
+        {
+            "name": "rec#1.duration >=180",
+            "ok": true,
+            "detail": "1297"
+        },
+        {
+            "name": "rec#1.quality === 'HD'",
+            "ok": true,
+            "detail": "HD"
+        },
+        {
+            "name": "rec#1.rating is numeric",
+            "ok": true,
+            "detail": "4.3"
+        },
+        {
+            "name": "rec#1.published_at matches YYYY-MM-DD HH:MM:SS",
+            "ok": true,
+            "detail": "2020-08-15 03:25:18"
+        },
+        {
+            "name": "rec#1.categories is array (normalized list)",
+            "ok": true,
+            "detail": "array"
+        },
+        {
+            "name": "rec#1.source === 'upornia_csv'",
+            "ok": true,
+            "detail": ""
+        },
+        {
+            "name": "rec#2.source_video_id is numeric string",
+            "ok": true,
+            "detail": "id=4141829"
+        },
+        {
+            "name": "rec#2.title is non-empty",
+            "ok": true,
+            "detail": "Renting An Apartment"
+        },
+        {
+            "name": "rec#2.page_url is official HTTPS upornia(-partner) URL",
+            "ok": true,
+            "detail": "https:\/\/videoupornia.com\/videos\/4141829\/renting-an-apartment\/?source=261072836"
+        },
+        {
+            "name": "rec#2.embed_url extracted from <iframe>",
+            "ok": true,
+            "detail": "https:\/\/videoupornia.com\/embed\/4141829\/?source=261072836"
+        },
+        {
+            "name": "rec#2.duration >=180",
+            "ok": true,
+            "detail": "1609"
+        },
+        {
+            "name": "rec#2.quality === 'HD'",
+            "ok": true,
+            "detail": "HD"
+        },
+        {
+            "name": "rec#2.rating is numeric",
+            "ok": true,
+            "detail": "4.1"
+        },
+        {
+            "name": "rec#2.published_at matches YYYY-MM-DD HH:MM:SS",
+            "ok": true,
+            "detail": "2021-08-26 19:30:00"
+        },
+        {
+            "name": "rec#2.categories is array (normalized list)",
+            "ok": true,
+            "detail": "array"
+        },
+        {
+            "name": "rec#2.source === 'upornia_csv'",
+            "ok": true,
+            "detail": ""
+        }
+    ]
+}
