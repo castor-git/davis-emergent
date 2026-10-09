@@ -187,7 +187,8 @@ This stack (PHP+MariaDB+reverse proxies) works in preview because both `backend`
   accepts only the official per-mode URL, rejects lookalike hosts, and never deletes records.
 - Admin shows the read-only official URLs with separate **Clean 7-day deleted** and guarded
   **Full backfill** actions. The nightly `dead-cleanup` job at 04:15 UTC is hard-wired to the
-  7-day mode; the full historical process was started once in the background on 2026-10-09.
+  7-day mode. The one-time historical process completed on 2026-10-09: it processed 1,479,722
+  deleted URLs and found 0 matches among the locally imported XVideos records.
 - Verification: test iteration 9 passed 15/15. Both CDN assets passed a one-byte range probe;
   no large feed was downloaded during automated tests. A post-review host-boundary fix was
   regression-tested (15/15 pass).
