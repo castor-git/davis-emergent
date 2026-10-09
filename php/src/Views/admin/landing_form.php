@@ -32,6 +32,9 @@
 
   <label style="grid-column:1/-1;display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--muted);font-weight:700;text-transform:uppercase">Intro copy
     <textarea name="intro" rows="4" data-testid="l-intro" style="background:#0f1115;border:1px solid var(--border);color:var(--text);padding:9px;border-radius:6px;font-family:inherit"><?= View::e($p['intro']) ?></textarea>
+    <?php if ($p['id']): ?>
+      <button type="submit" form="copy-form" class="btn-ghost" style="margin-top:6px;align-self:flex-start;padding:6px 12px;font-size:.78rem;text-transform:none;letter-spacing:0" data-testid="l-generate-copy" onclick="this.textContent='Generating…';this.style.opacity=.6">✨ Generate AI intro + meta description</button>
+    <?php endif; ?>
   </label>
 
   <fieldset style="grid-column:1/-1;border:1px solid var(--border);border-radius:8px;padding:12px">
@@ -108,6 +111,7 @@
 </form>
 <?php if ($p['id']): ?>
 <form id="cover-form" method="post" action="/admin/landings/cover" style="display:none"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"></form>
+<form id="copy-form" method="post" action="/admin/landings/copy" style="display:none"><input type="hidden" name="id" value="<?= (int)$p['id'] ?>"></form>
 <?php endif; ?>
 
 <script>

@@ -40,6 +40,7 @@ $router->post('/admin/source/toggle', fn() => (new AdminController())->toggleSou
 $router->post('/admin/source/import', fn() => (new AdminController())->importSource());
 $router->post('/admin/source/config', fn() => (new AdminController())->saveSourceConfig());
 $router->post('/admin/source/purge-demo', fn() => (new AdminController())->purgeDemo());
+$router->post('/admin/source/cleanup-dead', fn() => (new AdminController())->cleanupDeadVideos());
 $router->post('/admin/ads/save', fn() => (new AdminController())->saveAd());
 $router->post('/admin/ads/delete', fn() => (new AdminController())->deleteAd());
 $router->get('/admin/landings/new', fn() => (new AdminController())->landingForm());
@@ -47,6 +48,7 @@ $router->get('/admin/landings/edit', fn() => (new AdminController())->landingFor
 $router->post('/admin/landings/save', fn() => (new AdminController())->saveLanding());
 $router->post('/admin/landings/delete', fn() => (new AdminController())->deleteLanding());
 $router->post('/admin/landings/cover', fn() => (new AdminController())->generateCover());
+$router->post('/admin/landings/copy', fn() => (new AdminController())->generateLandingCopy());
 $router->post('/admin/landings/bulk', fn() => (new AdminController())->bulkLanding());
 $router->post('/admin/cache/clear', fn() => (new AdminController())->clearCache());
 $router->get('/admin/digest', fn() => (new AdminController())->digest());
@@ -55,6 +57,7 @@ $router->get('/admin/digest', fn() => (new AdminController())->digest());
 $router->post('/api/cron/nightly-import', fn() => (new \App\Controllers\CronController())->nightlyImport());
 $router->post('/api/cron/daily-suggest', fn() => (new \App\Controllers\CronController())->dailySuggest());
 $router->post('/api/cron/weekly-digest', fn() => (new \App\Controllers\CronController())->weeklyDigest());
+$router->post('/api/cron/dead-cleanup', fn() => (new \App\Controllers\CronController())->deadCleanup());
 
 // IndexNow key verification file — must be reachable at /{key}.txt
 $router->get('/{key}.txt', function($p) {

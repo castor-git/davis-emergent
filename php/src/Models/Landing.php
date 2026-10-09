@@ -116,7 +116,9 @@ class Landing {
             $params[] = "%$keyword%"; $params[] = "%$keyword%";
         }
         // Union semantics: a video is included if it matches ANY chosen bucket.
-        $where = $conds ? ('WHERE ' . implode(' OR ', $conds)) : 'WHERE 1=0';
+        $where = $conds
+            ? ('WHERE v.is_available=1 AND (' . implode(' OR ', $conds) . ')')
+            : 'WHERE 1=0';
         $sql = "SELECT v.* FROM videos v $where ORDER BY v.views DESC LIMIT ? OFFSET ?";
         $countSql = "SELECT COUNT(*) FROM videos v $where";
         $db = App::$db;

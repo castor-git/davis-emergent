@@ -7,12 +7,14 @@
   <div class="stat"><div class="k">Tags</div><div class="v"><?= $counts['tags'] ?></div></div>
   <div class="stat"><div class="k">Active sources</div><div class="v"><?= $counts['sources'] ?></div></div>
   <div class="stat"><div class="k">Active ads</div><div class="v"><?= $counts['ads'] ?></div></div>
+  <div class="stat" data-testid="unavailable-videos"><div class="k">Hidden videos</div><div class="v"><?= $counts['unavailable'] ?></div></div>
 </div>
 
 <h2>Sources</h2>
 <p class="muted">Enable a source, save its config (feed URL / API key), then click Import. Imports run in the background — the Message column shows RUNNING… and then the result. The scheduler re-runs enabled sources every 6 hours.</p>
 <?php $inp = 'background:#0f1115;border:1px solid var(--border);color:var(--text);padding:6px 8px;border-radius:5px;font-size:.82rem'; ?>
-<table class="data" data-testid="sources-table">
+<div class="table-scroll" data-testid="sources-table-scroll">
+<table id="sources-data" class="data" data-testid="sources-table">
   <thead><tr><th>Slug</th><th>Label</th><th>Status</th><th>Config</th><th>Last import</th><th>Message</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($sources as $s): $cfg = $s['config_arr']; ?>
@@ -25,6 +27,9 @@
           <input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>">
           <?php if (str_contains($s['slug'], 'csv')): ?>
             <input type="url" name="feed_url" placeholder="<?= $s['slug']==='xvideos_csv' ? 'default: xvideos.com-export-week.csv.gz' : 'CSV feed URL' ?>" value="<?= View::e($cfg['feed_url'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-feed-url-<?= View::e($s['slug']) ?>">
+            <?php if ($s['slug'] === 'xvideos_csv'): ?>
+              <input type="url" name="deleted_feed_url" placeholder="HTTPS feed of deleted XVideos URLs (one per line or CSV)" value="<?= View::e($cfg['deleted_feed_url'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-deleted-feed-xvideos">
+            <?php endif; ?>
           <?php elseif ($s['slug'] === 'xnxx_rapidapi'): ?>
             <input type="password" name="api_key" placeholder="RAPIDAPI_KEY" value="<?= View::e($cfg['api_key'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-api-key-xnxx" autocomplete="off">
             <input type="text" name="host" placeholder="porn-xnxx-api.p.rapidapi.com" value="<?= View::e($cfg['host'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-host-xnxx">
@@ -44,6 +49,9 @@
       <td style="text-align:right;white-space:nowrap">
         <form method="post" action="/admin/source/toggle" style="display:inline"><input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>"><button class="btn-ghost" data-testid="toggle-<?= View::e($s['slug']) ?>"><?= $s['enabled']?'Disable':'Enable' ?></button></form>
         <form method="post" action="/admin/source/import" style="display:inline"><input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>"><button class="btn-primary" data-testid="import-<?= View::e($s['slug']) ?>">Import</button></form>
+        <?php if ($s['slug'] === 'xvideos_csv'): ?>
+        <form method="post" action="/admin/source/cleanup-dead" style="display:inline"><button class="btn-ghost" data-testid="cleanup-dead-xvideos">Clean dead</button></form>
+        <?php endif; ?>
         <?php if ($s['slug'] === 'demo'): ?>
         <form method="post" action="/admin/source/purge-demo" style="display:inline" onsubmit="return confirm('Delete all demo videos? Real imported videos are kept.')"><button class="btn-ghost" style="color:#ff8887;border-color:rgba(225,6,0,.4)" data-testid="purge-demo">Purge demo</button></form>
         <?php endif; ?>
@@ -52,10 +60,12 @@
   <?php endforeach; ?>
   </tbody>
 </table>
+</div>
 
 <h2 style="margin-top:32px">Advertising slots</h2>
 <p class="muted">Manage sponsor banners and network snippets rendered on the site. Slots available: <?= implode(', ', array_map(fn($k,$v)=>"<code>$k</code>",array_keys($positions), array_values($positions))) ?></p>
-<table class="data" data-testid="ads-table">
+<div class="table-scroll" data-testid="ads-table-scroll">
+<table id="ads-data" class="data" data-testid="ads-table">
   <thead><tr><th>Position</th><th>Kind</th><th>Title</th><th>Weight</th><th>Active</th><th>Window</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($ads as $a): ?>
@@ -74,6 +84,7 @@
   <?php if (!$ads): ?><tr><td colspan="7" class="muted" style="text-align:center;padding:20px">No ads yet — create one below.</td></tr><?php endif; ?>
   </tbody>
 </table>
+</div>
 
 <h3 style="margin-top:24px">Create ad slot</h3>
 <form method="post" action="/admin/ads/save" data-testid="ad-form" style="background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -125,7 +136,8 @@
   <div class="stat"><div class="k">Zero-result queries</div><div class="v"><?= (int)$search_stats['zero_results'] ?></div></div>
 </div>
 <p class="muted">Top 20 keywords typed into the site search. Use them to spot content gaps and build landing pages that convert.</p>
-<table class="data" data-testid="top-searches">
+<div class="table-scroll" data-testid="top-searches-scroll">
+<table id="searches-data" class="data" data-testid="top-searches">
   <thead><tr><th style="width:60px">#</th><th>Keyword</th><th>Searches</th><th>Last results</th><th>Last seen</th><th></th></tr></thead>
   <tbody>
   <?php foreach ($top_searches as $i => $s): ?>
@@ -143,6 +155,7 @@
   <?php if (!$top_searches): ?><tr><td colspan="6" class="muted" style="text-align:center;padding:20px">No searches yet — data will appear here as visitors use the search bar.</td></tr><?php endif; ?>
   </tbody>
 </table>
+</div>
 
 <h2 style="margin-top:32px">Landing pages</h2>
 <p class="muted">Curated collection pages that turn search intent into visits. Click <strong>+ Landing</strong> next to a zero-result keyword above to spin one up in one click. Draft suggestions from the nightly job appear here with the <span class="pill off">DRAFT</span> badge.</p>
@@ -154,15 +167,17 @@
       <span class="muted" style="font-size:.8rem"><span id="bulk-count" data-testid="bulk-count">0</span> selected</span>
       <button form="landings-bulk-form" name="action" value="enable" class="btn-primary" style="padding:6px 12px;font-size:.82rem" onclick="return confirmBulk('enable and ping')" data-testid="bulk-enable">Enable + Ping</button>
       <button form="landings-bulk-form" name="action" value="reping" class="btn-ghost" style="padding:6px 12px;font-size:.82rem" onclick="return confirmBulk('re-ping search engines for')" data-testid="bulk-reping">Re-ping</button>
+      <button form="landings-bulk-form" name="action" value="covers" class="btn-ghost" style="padding:6px 12px;font-size:.82rem" onclick="return confirmBulk('generate AI covers for')" data-testid="bulk-covers">Generate AI covers</button>
       <button form="landings-bulk-form" name="action" value="delete" class="btn-ghost" style="padding:6px 12px;font-size:.82rem;color:#ff8887;border-color:rgba(225,6,0,.4)" onclick="return confirmBulk('DELETE')" data-testid="bulk-delete">Delete</button>
     </div>
   <?php endif; ?>
 </div>
 <form id="landings-bulk-form" method="post" action="/admin/landings/bulk"></form>
-<table class="data" data-testid="landings-table">
+<div class="table-scroll" data-testid="landings-table-scroll">
+<table id="landings-data" class="data" data-testid="landings-table">
   <thead><tr>
     <th style="width:36px"><?php if ($landings): ?><input type="checkbox" id="bulk-all" data-testid="bulk-all"><?php endif; ?></th>
-    <th>Slug</th><th>Title</th><th>Keyword</th><th>Tpl</th><th>Cat/Tag</th><th>Views</th><th>A/B</th><th>Status</th><th></th>
+    <th>Slug</th><th>Title</th><th>Keyword</th><th>Cover</th><th>Tpl</th><th>Cat/Tag</th><th>Views</th><th>A/B</th><th>Status</th><th></th>
   </tr></thead>
   <tbody>
   <?php foreach ($landings as $l):
@@ -178,6 +193,7 @@
       <td><a href="/l/<?= View::e($l['slug']) ?>" target="_blank"><code>/l/<?= View::e($l['slug']) ?></code></a></td>
       <td><?= View::e($l['title']) ?><?= $isDraft ? ' <span class="pill off" style="background:rgba(255,176,32,.14);color:#ffd076;margin-left:6px">DRAFT SUGGEST</span>' : '' ?></td>
       <td><?= View::e($l['keyword'] ?: '—') ?></td>
+      <td data-testid="landing-cover-<?= (int)$l['id'] ?>"><?= !empty($l['og_image']) ? '✓' : '—' ?></td>
       <td><code><?= View::e($l['template'] ?? 'grid') ?></code></td>
       <td class="muted" style="font-size:.82rem"><?= count($cats) ?>·<?= count($tags) ?></td>
       <td><?= (int)$l['views'] ?></td>
@@ -194,9 +210,10 @@
       </td>
     </tr>
   <?php endforeach; ?>
-  <?php if (!$landings): ?><tr><td colspan="10" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
+  <?php if (!$landings): ?><tr><td colspan="11" class="muted" style="text-align:center;padding:20px">No landing pages yet — the Search insights section above suggests keywords to convert.</td></tr><?php endif; ?>
   </tbody>
 </table>
+</div>
 <?php if ($landings): ?>
 <script>
 (function(){

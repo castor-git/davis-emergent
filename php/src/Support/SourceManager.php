@@ -46,7 +46,7 @@ class SourceManager {
                 $slugStr = mb_substr(self::slugify($title), 0, 150) . '-' . substr(md5($v['source'].$v['source_video_id']), 0, 6);
                 $st = $db->prepare("INSERT INTO videos (source, source_video_id, slug, title, description, thumbnail, preview, embed_url, page_url, duration, views, rating, quality, is_featured, published_at)
                     VALUES (:source,:sid,:slug,:title,:desc,:thumb,:preview,:embed,:page,:dur,:views,:rating,:quality,:feat,:pub)
-                    ON DUPLICATE KEY UPDATE title=VALUES(title), views=VALUES(views), rating=VALUES(rating), thumbnail=VALUES(thumbnail), embed_url=VALUES(embed_url), duration=VALUES(duration)");
+                    ON DUPLICATE KEY UPDATE title=VALUES(title), views=VALUES(views), rating=VALUES(rating), thumbnail=VALUES(thumbnail), embed_url=VALUES(embed_url), duration=VALUES(duration), is_available=1, unavailable_at=NULL");
                 $st->execute([
                     ':source'=>$v['source'], ':sid'=>mb_substr((string)$v['source_video_id'], 0, 191), ':slug'=>$slugStr,
                     ':title'=>$title, ':desc'=>mb_substr($v['description'] ?? '', 0, 5000),
@@ -97,11 +97,11 @@ class SourceManager {
 
     public static function recount(): void {
         $db = App::$db;
-        $db->exec("UPDATE categories c SET video_count = (SELECT COUNT(*) FROM video_categories vc WHERE vc.category_id = c.id)");
-        $db->exec("UPDATE tags t SET video_count = (SELECT COUNT(*) FROM video_tags vt WHERE vt.tag_id = t.id)");
+        $db->exec("UPDATE categories c SET video_count = (SELECT COUNT(*) FROM video_categories vc JOIN videos v ON v.id=vc.video_id WHERE vc.category_id = c.id AND v.is_available=1)");
+        $db->exec("UPDATE tags t SET video_count = (SELECT COUNT(*) FROM video_tags vt JOIN videos v ON v.id=vt.video_id WHERE vt.tag_id = t.id AND v.is_available=1)");
         // Feeds carry no "featured" flag — promote the 12 most-viewed recent videos with an embed
         $db->exec("UPDATE videos SET is_featured=0 WHERE is_featured=1");
-        $db->exec("UPDATE videos SET is_featured=1 WHERE embed_url<>'' ORDER BY views DESC, published_at DESC LIMIT 12");
+        $db->exec("UPDATE videos SET is_featured=1 WHERE embed_url<>'' AND is_available=1 ORDER BY views DESC, published_at DESC LIMIT 12");
     }
 
     /** Remove seeded demo videos (and now-orphaned taxonomies) once real feeds are live. */

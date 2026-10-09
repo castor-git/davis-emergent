@@ -45,6 +45,7 @@ class CronController {
         catch (\Throwable $e) { error_log('landing suggester: ' . $e->getMessage()); }
         // Give fresh drafts an AI cover so they are share-ready the moment admin publishes them
         \App\Support\CoverGenerator::generateMissing(3);
+        \App\Support\LandingCopyGenerator::generateMissing(3);
     }
 
     public function weeklyDigest(): void {
@@ -70,5 +71,24 @@ class CronController {
         } catch (\Throwable $e) {
             error_log('weekly digest failure: ' . $e->getMessage());
         }
+    }
+
+    // Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    public function deadCleanup(): void {
+        $secret = getenv('WEBHOOK_CRON_SECRET') ?: '';
+        $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        $token = str_starts_with($auth, 'Bearer ') ? substr($auth, 7) : '';
+        if (!$secret || !hash_equals($secret, $token)) {
+            View::json(['ok' => false, 'error' => 'unauthorized'], 401);
+            return;
+        }
+        View::json(['ok' => true, 'event' => 'dead-cleanup-accepted']);
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            ignore_user_abort(true);
+            flush();
+        }
+        \App\Support\XVideosDeadCleaner::runAsync();
     }
 }

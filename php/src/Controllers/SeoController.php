@@ -20,7 +20,7 @@ class SeoController {
         foreach (['/', '/videos', '/categories', '/tags', '/terms', '/privacy', '/dmca', '/2257'] as $p) {
             $out[] = "<url><loc>{$host}{$p}</loc></url>";
         }
-        $rows = App::$db->query("SELECT slug, published_at FROM videos ORDER BY id DESC LIMIT 5000")->fetchAll();
+        $rows = App::$db->query("SELECT slug, published_at FROM videos WHERE is_available=1 ORDER BY id DESC LIMIT 5000")->fetchAll();
         foreach ($rows as $r) $out[] = "<url><loc>{$host}/video/".View::e($r['slug'])."</loc><lastmod>".date('c', strtotime($r['published_at']))."</lastmod></url>";
         foreach (App::$db->query("SELECT slug FROM categories")->fetchAll() as $r) $out[] = "<url><loc>{$host}/category/".View::e($r['slug'])."</loc></url>";
         foreach (App::$db->query("SELECT slug FROM tags")->fetchAll() as $r) $out[] = "<url><loc>{$host}/tag/".View::e($r['slug'])."</loc></url>";

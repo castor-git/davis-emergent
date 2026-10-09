@@ -32,6 +32,7 @@ return [
             'label' => 'XVideos CSV Import',
             'adapter' => 'XVideosCsvAdapter',
             'feed_url' => getenv('XVIDEOS_CSV_URL') ?: 'https://public-assets.xvideos-cdn.com/webmaster-tools/xvideos.com-export-week.csv.gz',
+            'deleted_feed_url' => getenv('XVIDEOS_DELETED_CSV_URL') ?: '',
             'import_limit' => 500,
         ],
         'xnxx_rapidapi' => [

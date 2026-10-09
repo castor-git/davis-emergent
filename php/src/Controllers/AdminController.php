@@ -26,6 +26,7 @@ class AdminController {
             'tags' => (int)$db->query("SELECT COUNT(*) FROM tags")->fetchColumn(),
             'sources' => (int)$db->query("SELECT COUNT(*) FROM sources WHERE enabled=1")->fetchColumn(),
             'ads' => (int)$db->query("SELECT COUNT(*) FROM ads WHERE active=1")->fetchColumn(),
+            'unavailable' => (int)$db->query("SELECT COUNT(*) FROM videos WHERE is_available=0")->fetchColumn(),
         ];
         $sources = $db->query("SELECT * FROM sources ORDER BY slug")->fetchAll();
         foreach ($sources as &$s) { $s['config_arr'] = json_decode($s['config'] ?: '{}', true) ?: []; }
@@ -119,6 +120,19 @@ class AdminController {
         exit;
     }
 
+    public function generateLandingCopy(): void {
+        $this->auth();
+        $id = (int)($_POST['id'] ?? 0);
+        try {
+            \App\Support\LandingCopyGenerator::generate($id);
+            $msg = 'AI SEO copy generated';
+        } catch (\Throwable $exception) {
+            $msg = 'AI SEO copy failed: ' . $exception->getMessage();
+        }
+        header('Location: /admin/landings/edit?id=' . $id . '&msg=' . urlencode($msg));
+        exit;
+    }
+
     public function deleteLanding(): void {
         $this->auth();
         \App\Models\Landing::delete((int)($_POST['id'] ?? 0));
@@ -168,6 +182,17 @@ class AdminController {
                 }
                 $msg = "Re-pinged {$pings} active landing(s)";
                 break;
+            case 'covers':
+                $selected = $db->prepare("SELECT id FROM landings WHERE id IN ($ph)");
+                $selected->execute($ids);
+                $liveIds = array_map('intval', array_column($selected->fetchAll(), 'id'));
+                if (!$liveIds) {
+                    $msg = 'No selected landings still exist';
+                    break;
+                }
+                $started = \App\Support\CoverGenerator::generateManyAsync($liveIds);
+                $msg = "Started AI cover generation for {$started} landing(s). Refresh shortly to see new covers.";
+                break;
             default:
                 $msg = 'Unknown bulk action';
         }
@@ -180,7 +205,7 @@ class AdminController {
         $this->auth();
         $slug = $_POST['slug'] ?? '';
         // Only fields present in the request are touched; an explicitly submitted empty field clears that key.
-        $fields = ['feed_url', 'api_key', 'host', 'queries', 'import_limit'];
+        $fields = ['feed_url', 'deleted_feed_url', 'api_key', 'host', 'queries', 'import_limit'];
         $st = App::$db->prepare("SELECT config FROM sources WHERE slug=?"); $st->execute([$slug]);
         $merged = json_decode($st->fetchColumn() ?: '{}', true) ?: [];
         foreach ($fields as $k) {
@@ -244,6 +269,18 @@ class AdminController {
         }
         SourceManager::importAsync($slug, SourceManager::limitFor($slug, 300));
         header('Location: /admin?msg=' . urlencode("Import of {$slug} started in background — refresh in ~30s to see the result")); exit;
+    }
+
+    public function cleanupDeadVideos(): void {
+        $this->auth();
+        try {
+            \App\Support\XVideosDeadCleaner::runAsync();
+            $msg = 'Dead-video cleanup started in background';
+        } catch (\Throwable $exception) {
+            $msg = 'Dead-video cleanup failed to start: ' . $exception->getMessage();
+        }
+        header('Location: /admin?msg=' . urlencode($msg));
+        exit;
     }
 
     public function purgeDemo(): void {

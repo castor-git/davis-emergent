@@ -50,6 +50,24 @@ class CoverGenerator {
         return $done;
     }
 
+    public static function generateManyAsync(array $ids): int {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+        if (!$ids) {
+            return 0;
+        }
+        $root = dirname(__DIR__, 2);
+        $args = implode(' ', array_map('escapeshellarg', array_map('strval', $ids)));
+        $command = sprintf(
+            'nohup %s %s %s >> %s 2>&1 &',
+            escapeshellarg(PHP_BINARY ?: 'php'),
+            escapeshellarg($root . '/bin/generate_covers.php'),
+            $args,
+            escapeshellarg($root . '/storage/logs/cover-generation.log')
+        );
+        exec($command);
+        return count($ids);
+    }
+
     private static function callSidecar(string $prompt): array {
         $secret = getenv('WEBHOOK_CRON_SECRET') ?: '';
         if (!$secret) throw new \RuntimeException('WEBHOOK_CRON_SECRET missing');

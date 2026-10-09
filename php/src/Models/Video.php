@@ -5,7 +5,8 @@ use App\Core\App;
 
 class Video {
     public static function paginate(array $filters, int $page = 1, int $per = 24): array {
-        $where = []; $params = [];
+        $where = ['v.is_available = 1'];
+        $params = [];
         if (!empty($filters['q'])) {
             $where[] = "(v.title LIKE :q OR v.description LIKE :q)";
             $params[':q'] = '%' . $filters['q'] . '%';
@@ -49,7 +50,7 @@ class Video {
     }
 
     public static function bySlug(string $slug): ?array {
-        $st = App::$db->prepare("SELECT * FROM videos WHERE slug=?");
+        $st = App::$db->prepare("SELECT * FROM videos WHERE slug=? AND is_available=1");
         $st->execute([$slug]);
         $row = $st->fetch();
         return $row ?: null;
@@ -68,7 +69,7 @@ class Video {
         $st = App::$db->prepare("
             SELECT v.*, COUNT(*) as score FROM videos v
             JOIN video_categories vc ON vc.video_id=v.id
-            WHERE vc.category_id IN (SELECT category_id FROM video_categories WHERE video_id=?) AND v.id <> ?
+            WHERE vc.category_id IN (SELECT category_id FROM video_categories WHERE video_id=?) AND v.id <> ? AND v.is_available=1
             GROUP BY v.id ORDER BY score DESC, v.views DESC LIMIT ?");
         $st->bindValue(1, $id, \PDO::PARAM_INT);
         $st->bindValue(2, $id, \PDO::PARAM_INT);
@@ -82,7 +83,7 @@ class Video {
     }
 
     public static function suggest(string $q, int $limit = 8): array {
-        $st = App::$db->prepare("SELECT slug, title FROM videos WHERE title LIKE ? ORDER BY views DESC LIMIT ?");
+        $st = App::$db->prepare("SELECT slug, title FROM videos WHERE title LIKE ? AND is_available=1 ORDER BY views DESC LIMIT ?");
         $st->bindValue(1, '%' . $q . '%');
         $st->bindValue(2, $limit, \PDO::PARAM_INT);
         $st->execute();

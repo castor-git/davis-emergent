@@ -19,6 +19,8 @@ class Schema {
             rating DECIMAL(3,1) DEFAULT 0,
             quality VARCHAR(16) DEFAULT 'HD',
             is_featured TINYINT(1) DEFAULT 0,
+            is_available TINYINT(1) NOT NULL DEFAULT 1,
+            unavailable_at DATETIME NULL,
             published_at DATETIME NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uniq_src (source, source_video_id),
@@ -111,6 +113,15 @@ class Schema {
             views INT NOT NULL DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        foreach ([
+            'is_available TINYINT(1) NOT NULL DEFAULT 1',
+            'unavailable_at DATETIME NULL',
+        ] as $spec) {
+            [$col] = explode(' ', $spec);
+            $has = $db->query("SHOW COLUMNS FROM videos LIKE " . $db->quote($col))->fetch();
+            if (!$has) $db->exec("ALTER TABLE videos ADD COLUMN $spec");
+        }
 
         // Idempotent add-column migration for existing rows
         foreach (['meta_title VARCHAR(191) NULL','meta_description VARCHAR(300) NULL','og_image VARCHAR(500) NULL',"template VARCHAR(24) NOT NULL DEFAULT 'grid'","suggested TINYINT(1) NOT NULL DEFAULT 0",'title_variant_b VARCHAR(191) NULL'] as $spec) {
