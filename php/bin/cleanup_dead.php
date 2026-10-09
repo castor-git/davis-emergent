@@ -5,6 +5,7 @@ use App\Core\App;
 use App\Support\XVideosDeadCleaner;
 
 App::boot();
-$result = XVideosDeadCleaner::run();
-printf("[%s] dead-cleanup -> %s\n", gmdate('c'), $result['message']);
+$mode = $argv[1] ?? 'week';
+$result = XVideosDeadCleaner::run($mode);
+printf("[%s] dead-cleanup mode=%s -> %s\n", gmdate('c'), $mode, $result['message']);
 exit($result['ok'] ? 0 : 2);

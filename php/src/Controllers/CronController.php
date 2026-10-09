@@ -89,6 +89,6 @@ class CronController {
             ignore_user_abort(true);
             flush();
         }
-        \App\Support\XVideosDeadCleaner::runAsync();
+        \App\Support\XVideosDeadCleaner::runAsync('week');
     }
 }

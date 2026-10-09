@@ -21,7 +21,7 @@ crons:
     method: POST
     enabled: true
   - name: dead-cleanup
-    description: "Checks the configured XVideos deleted-URL feed nightly and hides unavailable videos"
+    description: "Streams the official XVideos 7-day deleted-URL feed nightly and hides unavailable videos"
     cron: "15 4 * * *"
     # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
     endpoint: "{{BASE_URL}}/api/cron/dead-cleanup"

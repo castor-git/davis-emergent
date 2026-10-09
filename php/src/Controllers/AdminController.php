@@ -29,7 +29,13 @@ class AdminController {
             'unavailable' => (int)$db->query("SELECT COUNT(*) FROM videos WHERE is_available=0")->fetchColumn(),
         ];
         $sources = $db->query("SELECT * FROM sources ORDER BY slug")->fetchAll();
-        foreach ($sources as &$s) { $s['config_arr'] = json_decode($s['config'] ?: '{}', true) ?: []; }
+        foreach ($sources as &$source) {
+            $saved = json_decode($source['config'] ?: '{}', true) ?: [];
+            $source['config_arr'] = array_replace(
+                App::config('sources.' . $source['slug'], []),
+                $saved
+            );
+        }
         $ads = \App\Models\Ad::all();
         $positions = \App\Models\Ad::positions();
         $top_searches = \App\Models\SearchQuery::top(20);
@@ -205,7 +211,15 @@ class AdminController {
         $this->auth();
         $slug = $_POST['slug'] ?? '';
         // Only fields present in the request are touched; an explicitly submitted empty field clears that key.
-        $fields = ['feed_url', 'deleted_feed_url', 'api_key', 'host', 'queries', 'import_limit'];
+        $fields = [
+            'feed_url',
+            'deleted_feed_url',
+            'deleted_full_feed_url',
+            'api_key',
+            'host',
+            'queries',
+            'import_limit',
+        ];
         $st = App::$db->prepare("SELECT config FROM sources WHERE slug=?"); $st->execute([$slug]);
         $merged = json_decode($st->fetchColumn() ?: '{}', true) ?: [];
         foreach ($fields as $k) {
@@ -273,9 +287,12 @@ class AdminController {
 
     public function cleanupDeadVideos(): void {
         $this->auth();
+        $mode = ($_POST['mode'] ?? 'week') === 'full' ? 'full' : 'week';
         try {
-            \App\Support\XVideosDeadCleaner::runAsync();
-            $msg = 'Dead-video cleanup started in background';
+            \App\Support\XVideosDeadCleaner::runAsync($mode);
+            $msg = $mode === 'full'
+                ? 'Full deleted-video backfill started in background'
+                : '7-day dead-video cleanup started in background';
         } catch (\Throwable $exception) {
             $msg = 'Dead-video cleanup failed to start: ' . $exception->getMessage();
         }

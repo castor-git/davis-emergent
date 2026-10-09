@@ -28,7 +28,9 @@
           <?php if (str_contains($s['slug'], 'csv')): ?>
             <input type="url" name="feed_url" placeholder="<?= $s['slug']==='xvideos_csv' ? 'default: xvideos.com-export-week.csv.gz' : 'CSV feed URL' ?>" value="<?= View::e($cfg['feed_url'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-feed-url-<?= View::e($s['slug']) ?>">
             <?php if ($s['slug'] === 'xvideos_csv'): ?>
-              <input type="url" name="deleted_feed_url" placeholder="HTTPS feed of deleted XVideos URLs (one per line or CSV)" value="<?= View::e($cfg['deleted_feed_url'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-deleted-feed-xvideos">
+              <input type="url" value="<?= View::e($cfg['deleted_feed_url'] ?? '') ?>" readonly style="<?= $inp ?>" data-testid="cfg-deleted-feed-xvideos">
+              <input type="url" value="<?= View::e($cfg['deleted_full_feed_url'] ?? '') ?>" readonly style="<?= $inp ?>" data-testid="cfg-deleted-full-feed-xvideos">
+              <span class="muted" style="font-size:.72rem">Official 7-day feed runs nightly. Full feed is manual only.</span>
             <?php endif; ?>
           <?php elseif ($s['slug'] === 'xnxx_rapidapi'): ?>
             <input type="password" name="api_key" placeholder="RAPIDAPI_KEY" value="<?= View::e($cfg['api_key'] ?? '') ?>" style="<?= $inp ?>" data-testid="cfg-api-key-xnxx" autocomplete="off">
@@ -50,7 +52,8 @@
         <form method="post" action="/admin/source/toggle" style="display:inline"><input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>"><button class="btn-ghost" data-testid="toggle-<?= View::e($s['slug']) ?>"><?= $s['enabled']?'Disable':'Enable' ?></button></form>
         <form method="post" action="/admin/source/import" style="display:inline"><input type="hidden" name="slug" value="<?= View::e($s['slug']) ?>"><button class="btn-primary" data-testid="import-<?= View::e($s['slug']) ?>">Import</button></form>
         <?php if ($s['slug'] === 'xvideos_csv'): ?>
-        <form method="post" action="/admin/source/cleanup-dead" style="display:inline"><button class="btn-ghost" data-testid="cleanup-dead-xvideos">Clean dead</button></form>
+        <form method="post" action="/admin/source/cleanup-dead" style="display:inline"><input type="hidden" name="mode" value="week"><button class="btn-ghost" data-testid="cleanup-dead-xvideos">Clean 7-day deleted</button></form>
+        <form method="post" action="/admin/source/cleanup-dead" style="display:inline" onsubmit="return confirm('Start the full deleted-URL backfill? This can take a long time.')"><input type="hidden" name="mode" value="full"><button class="btn-ghost" data-testid="cleanup-dead-full-xvideos">Full backfill</button></form>
         <?php endif; ?>
         <?php if ($s['slug'] === 'demo'): ?>
         <form method="post" action="/admin/source/purge-demo" style="display:inline" onsubmit="return confirm('Delete all demo videos? Real imported videos are kept.')"><button class="btn-ghost" style="color:#ff8887;border-color:rgba(225,6,0,.4)" data-testid="purge-demo">Purge demo</button></form>

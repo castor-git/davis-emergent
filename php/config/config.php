@@ -32,7 +32,10 @@ return [
             'label' => 'XVideos CSV Import',
             'adapter' => 'XVideosCsvAdapter',
             'feed_url' => getenv('XVIDEOS_CSV_URL') ?: 'https://public-assets.xvideos-cdn.com/webmaster-tools/xvideos.com-export-week.csv.gz',
-            'deleted_feed_url' => getenv('XVIDEOS_DELETED_CSV_URL') ?: '',
+            'deleted_feed_url' => getenv('XVIDEOS_DELETED_CSV_URL')
+                ?: 'https://public-assets.xvideos-cdn.com/webmaster-tools/xvideos.com-deleted-week.csv.gz',
+            'deleted_full_feed_url' => getenv('XVIDEOS_DELETED_FULL_CSV_URL')
+                ?: 'https://public-assets.xvideos-cdn.com/webmaster-tools/xvideos.com-deleted-full.csv.gz',
             'import_limit' => 500,
         ],
         'xnxx_rapidapi' => [
