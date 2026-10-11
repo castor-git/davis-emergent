@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "webpros-mcp": {
+      "type": "http",
+      "url": "https://mcp.webpros.com/api/mcp",
+      "oauth": {
+        "clientId": "Hf3QmY8LpRs2KaV7NxTwJe6CgUz9BdMiP4vXnLq1Zo",
+        "callbackPort": 64474
+      }
+    }
+  }
+}
